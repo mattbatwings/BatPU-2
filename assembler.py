@@ -1,7 +1,15 @@
-def assemble(assembly_filename, output_filename):
-    assembly_file = open(assembly_filename, 'r')
-    machine_code_file = open(output_filename, 'w')
-    lines = (line.strip() for line in assembly_file)
+from sys import argv
+
+def assembleFromFile(assembly_filename, output_filename):
+    with open(assembly_filename, 'r') as assembly_file:
+        assembly = assembly_file.readlines()
+        machine_code = assemble(assembly)
+    
+    with open(output_filename, 'w') as output_file:
+        output_file.writelines(machine_code)
+
+def assemble(assembly):
+    lines = (line.strip() for line in assembly)
 
     def remove_comment(comment_symbol, line):
         return line.split(comment_symbol)[0]
@@ -9,6 +17,8 @@ def assemble(assembly_filename, output_filename):
     # remove comments and blanklines
     lines = [remove_comment("/", line) for line in lines]
     lines = [line for line in lines if line.strip()]
+
+    returnLines = []
     
     symbols = {}
     
@@ -59,8 +69,7 @@ def assemble(assembly_filename, output_filename):
             exit(f'Could not resolve {word}')
         return symbols[word]
 
-    for i in range(offset, len(lines)):
-        line = lines[i]
+    for i, line in enumerate(lines[offset:]):
         words = line.split()
 
         # remove label, we have it in symbols now
@@ -87,54 +96,61 @@ def assemble(assembly_filename, output_filename):
         words = [resolve(word) for word in words]
 
         if opcode in ['bif']: # Flag
-            if words[1] != (words[1] % (2 ** 2)):
-                exit(f'Invalid flag on line {i}')
+            if words[1] > 3:
+                exit(f'Invalid flag on line {i+1}')
             machine_code |= (words[1] << 10)
 
         if opcode in ['jmp', 'bif', 'cal', 'ret']: # Instruction Memory Address
-            if words[-1] != (words[-1] % (2 ** 10)):
-                exit(f'Invalid instruction memory address on line {i}')
+            if words[-1] > 1023:
+                exit(f'Invalid instruction memory address on line {i+1}')
             machine_code |= (words[-1])
 
         if opcode in ['pld', 'mld', 'adi', 'add', 'sub', 'bit', 'rsh', 'mul']: # Destination / Source
-            if words[1] != (words[1] % (2 ** 3)):
-                exit(f'Invalid destination / source on line {i}')
+            if words[1] > 7:
+                exit(f'Invalid destination / source on line {i+1}')
             machine_code |= (words[1] << 9)
 
         if opcode in ['pld', 'pst']: # Port
-            if words[2] != (words[2] % (2 ** 8)):
-                exit(f'Invalid port on line {i}')
+            if words[2] > 255:
+                exit(f'Invalid port on line {i+1}')
             machine_code |= (words[2])
 
         if opcode in ['pld', 'pst']: # Offset
-            if words[2] != (words[2] % (2 ** 8)):
-                exit(f'Invalid offset on line {i}')
+            if words[2] > 255:
+                exit(f'Invalid offset on line {i+1}')
             machine_code |= (words[2])
 
         if opcode in ['adi', 'add', 'sub', 'bit', 'rsh', 'mul']: # Source A
-            if words[2] != (words[2] % (2 ** 3)):
-                exit(f'Invalid source A on line {i}')
+            if words[2] > 7:
+                exit(f'Invalid source A on line {i+1}')
             machine_code |= (words[2] << 6)
 
         if opcode in ['adi', 'add', 'sub', 'bit', 'rsh', 'mul']: # Source B
-            if words[-1] != (words[-1] % (2 ** 3)):
-                exit(f'Invalid source A on line {i}')
+            if words[-1] > 7:
+                exit(f'Invalid source A on line {i+1}')
             machine_code |= (words[-1])
         
         if opcode in ['adi']: # Immediate
-            if words[-1] != (words[-1] % (2 ** 6)):
-                exit(f'Invalid immediate A on line {i}')
+            if words[-1] > 63:
+                exit(f'Invalid immediate A on line {i+1}')
             machine_code |= (words[-1])
 
         if opcode in ['bit']: # Type
-            if words[3] != (words[3] % (2 ** 3)):
-                exit(f'Invalid type on line {i}')
+            if words[3] > 7:
+                exit(f'Invalid type on line {i+1}')
             machine_code |= (words[3] << 3)
 
         if opcode in ['bit']: # E
-            if words[3] != (words[3] % (2 ** 1)):
-                exit(f'Invalid E on line {i}')
+            if words[3] > 1:
+                exit(f'Invalid E on line {i+1}')
             machine_code |= (words[3] << 3)
 
         as_string = bin(machine_code)[2:].rjust(16, '0')
-        machine_code_file.write(f'{as_string}\n')
+        returnLines.append(f'{as_string}')
+    
+    return "\n".join(returnLines)
+
+if __name__ == '__main__':
+    if len(argv) < 3:
+        exit('Usage: python assembler.py <assembly file> <output file>')
+    assembleFromFile(argv[1], argv[2])
