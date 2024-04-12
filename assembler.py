@@ -162,7 +162,7 @@ def assemble(assembly_filename, output_filename):
         # operation
         if opcode in ['bit']:
             if words[3] != (words[3] % (2 ** 3)):
-                exit(f'Invalid reg A for {opcode} on line {i}')
+                exit(f'Invalid operation for {opcode} on line {i}')
             machine_code |= (words[3] << 3)
 
         as_string = bin(machine_code)[2:].rjust(16, '0')
