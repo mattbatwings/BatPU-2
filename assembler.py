@@ -97,19 +97,19 @@ def assemble(assembly_filename, output_filename):
 
         # number of operands check
         if opcode in ['nop', 'hlt', 'ret'] and len(words) != 1:
-            exit('Incorrect number of operands for {opcode} on line {i}')
+            exit(f'Incorrect number of operands for {opcode} on line {i}')
         
         if opcode in ['jmp', 'cal'] and len(words) != 2:
-            exit('Incorrect number of operands for {opcode} on line {i}')
+            exit(f'Incorrect number of operands for {opcode} on line {i}')
 
         if opcode in ['brh', 'pld', 'pst', 'mld', 'mst', 'ldi', 'adi', 'rsh'] and len(words) != 3:
-            exit('Incorrect number of operands for {opcode} on line {i}')
+            exit(f'Incorrect number of operands for {opcode} on line {i}')
 
         if opcode in ['add', 'sub'] and len(words) != 4:
-            exit('Incorrect number of operands for {opcode} on line {i}')
+            exit(f'Incorrect number of operands for {opcode} on line {i}')
 
         if opcode in ['bit'] and len(words) != 5:
-            exit('Incorrect number of operands for {opcode} on line {i}')
+            exit(f'Incorrect number of operands for {opcode} on line {i}')
 
         # instruction memory address
         if opcode in ['jmp', 'brh', 'cal']:
