@@ -76,9 +76,9 @@ def assemble(assembly_filename, output_filename):
         elif words[0] == 'lsh':
             words = ['add', words[1], words[2], words[2]] # add dest A A
         elif words[0] == 'inc':
-            words = ['adi', words[1], words[2], '1'] # adi dest A 1
+            words = ['adi', words[1], '1'] # adi dest 1
         elif words[0] == 'dec':
-            words = ['adi', words[1], words[2], '-1'] # adi dest A -1
+            words = ['adi', words[1], '-1'] # adi dest -1
         elif words[0] == 'not':
             words = ['nor', words[1], words[2], registers[0]] # nor dest A r0
         elif words[0] == 'lod' and len(words) == 3:
