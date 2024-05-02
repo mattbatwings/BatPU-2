@@ -76,6 +76,10 @@ def assemble(assembly_filename, output_filename):
             words = ['adi', words[1], words[2], '-1'] # adi dest A -1
         elif words[0] == 'not':
             words = ['nor', words[1], words[2], registers[0]] # nor dest A r0
+        elif words[0] == 'lod' and len(words) == 3:
+            words = ['lod', words[1], words[2], '0'] # lod dest A 0
+        elif words[0] == 'str' and len(words) == 3:
+            words = ['str', words[1], words[2], '0'] # str source A 0
         
         # Begin machine code translation
         opcode = words[0]
