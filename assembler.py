@@ -30,6 +30,11 @@ def assemble(assembly_filename, output_filename):
         symbols[symbol] = index
     for index, symbol in enumerate(conditions4):
         symbols[symbol] = index
+
+    ports = ['pixel_x', 'pixel_y', 'draw_pixel', 'clear_pixel', 'load_pixel', 'buffer_screen', 'clear_screen_buffer', 
+             'write_char', 'buffer_chars', 'clear_chars_buffer', 'show_number', 'clear_number', 'signed_mode', 'unsigned_mode', 'rng', 'controller_input']
+    for index, symbol in enumerate(ports):
+        symbols[symbol] = index + 240
     
     # Add definitions to symbol table
     # expects all definitions to be above assembly
