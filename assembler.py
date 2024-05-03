@@ -112,7 +112,7 @@ def assemble(assembly_filename, output_filename):
               'add_char':         ['str {1} {0} 0'],    # add_char rbp rChar  : str rChar rbp 0 # append character at rChar to character display buffer
 
               'add_chari':        ['ldi {1} {2}\n'+     # add_chari rbp rBuf imm : ldi rBuf imm
-                                   'add_char {0} {1}']  #                          add_char rbp rBuf
+                                   'add_char {0} {1}'], #                          add_char rbp rBuf
                                                                                                 # append immediate character imm to character display buffer
 
               'cpy_char_buffer':  ['str r0 {0} 1'],     # cpy_char_buffer rbp : str r0 rbp 1    # copy character display buffer to char display
@@ -263,7 +263,6 @@ def assemble(assembly_filename, output_filename):
         if len(opcodes[opcode]) != (len(words)-1):
             exit(f'Incorrect number of operands for \'{opcode}\' on line {i+1}')
 
-<<<<<<< HEAD
         if opcode in ['rsh', 'ldi', 'adi', 'brh'] and len(words) != 3:
             exit(f'Incorrect number of operands for {opcode} on line {i}')
 
@@ -311,7 +310,7 @@ def assemble(assembly_filename, output_filename):
             if words[3] < -8 or words[3] > 7: # 2s comp [-7, 8]
                 exit(f'Invalid offset for {opcode} on line {i}')
             machine_code |= words[3] & (2 ** 4 - 1)
-=======
+
         # Check operands
         for idx,op in enumerate(opcodes[opcode]):
             opinfo = ops[op]
@@ -321,7 +320,6 @@ def assemble(assembly_filename, output_filename):
             if words[idx+1] != (words[idx+1] & mask):
                 exit(f'Invalid {opinfo[3]} for \'{opcode}\' on line {i+1}')
             machine_code |= (words[idx+1] & mask) << opinfo[0] # Just to be safe, it's ANDEed with the mask
->>>>>>> f257704 (Update assembler.py)
 
         as_string = bin(machine_code)[2:].rjust(16, '0')
         machine_code_file.write(f'{as_string}\n')
