@@ -82,66 +82,60 @@ def assemble(assembly_filename, output_filename):
                      "not {0} {0}"       ], #                not dest dest   # do the bitwise "IMPLIES" operation on registers A, B and store the result in dest
                                             # A -> B = !(!(A -> B))
 #--------------------------------------------------------------------------------#
-              'use_display':      ['ldi {0} 240'],      # use_display rbp : ldi rbp 240         # store pixel display's base pointer in rbp
+              'use_devices':      ['ldi {0} 248'],      # use_display rbp : ldi rbp 240         # store pixel display's base pointer in rbp
 
-              'set_x':            ['str {1} {0} 0'],    # set_x rbp rX : str rX rbp 0           # store value at rX into pixel display's X port
+              'set_x':            ['str {1} {0} -8'],   # set_x rbp rX : str rX rbp 0           # store value at rX into pixel display's X port
 
               'set_xi':           ['ldi {1} {2}\n'+     # set_xi rbp rBuf imm : ldi rBuf imm
                                    'set_x {0} {1}' ],   #                       set_x rbp rBuf  # store immediate value into pixel display's X port
 
-              'set_y':            ['str {1} {0} 1'],    # set_y rbp rY : str rY rbp 1           # store value at rY into pixel display's Y port
+              'set_y':            ['str {1} {0} -7'],   # set_y rbp rY : str rY rbp 1           # store value at rY into pixel display's Y port
 
               'set_yi':           ['ldi {1} {2}\n'+     # set_yi rbp rBuf imm : ldi rBuf imm
                                    'set_y {0} {1}' ],   #                       set_y rbp rBuf  # store immediate value into pixel display's Y port
 
-              'set_pixel':        ['str r0 {0} 2'],     # set_pixel rbp : str r0 rbp 2          # trigger pixel display's Draw Pixel port to draw current pixel
+              'set_pixel':        ['str r0 {0} -6'],    # set_pixel rbp : str r0 rbp 2          # trigger pixel display's Draw Pixel port to draw current pixel
 
-              'clr_pixel':        ['str r0 {0} 3'],     # clr_pixel rbp : str r0 rbp 3          # trigger pixel display's Clear Pixel port to clear current pixel
+              'clr_pixel':        ['str r0 {0} -5'],    # clr_pixel rbp : str r0 rbp 3          # trigger pixel display's Clear Pixel port to clear current pixel
 
-              'get_pixel':        ['lod {1} {0} 4'],    # get_pixel rbp rDest : lod rDest rbp 4 # load pixel at current pixel position
+              'get_pixel':        ['lod {1} {0} -4'],   # get_pixel rbp rDest : lod rDest rbp 4 # load pixel at current pixel position
 
-              'cpy_disp_buffer':  ['str r0 {0} 5'],     # cpy_disp_buffer rbp : str r0 rbp 5    # copy pixel display buffer to screen
+              'cpy_disp_buffer':  ['str r0 {0} -3'],    # cpy_disp_buffer rbp : str r0 rbp 5    # copy pixel display buffer to screen
 
-              'clr_disp_buffer':  ['str r0 {0} 6'],     # clr_disp_buffer rbp : str r0 rbp 6    # clear pixel display buffer
+              'clr_disp_buffer':  ['str r0 {0} -2'],    # clr_disp_buffer rbp : str r0 rbp 6    # clear pixel display buffer
 
               'clr_display':['clr_disp_buffer {0}\n'+   # clr_display rbp : clr_disp_buffer rbp
                              'cpy_disp_buffer {0}'   ], #                   cpy_disp_buffer rbp # clear both display and display buffer
 #--------------------------------------------------------------------------------#
-              'use_char_display': ['ldi {0} 247'],      # use_char_display rbp : ldi rbp 247    # store character display's base pointer in rbp
-
-              'add_char':         ['str {1} {0} 0'],    # add_char rbp rChar  : str rChar rbp 0 # append character at rChar to character display buffer
+              'add_char':         ['str {1} {0} -1'],   # add_char rbp rChar  : str rChar rbp 0 # append character at rChar to character display buffer
 
               'add_chari':        ['ldi {1} {2}\n'+     # add_chari rbp rBuf imm : ldi rBuf imm
                                    'add_char {0} {1}'], #                          add_char rbp rBuf
                                                                                                 # append immediate character imm to character display buffer
 
-              'cpy_char_buffer':  ['str r0 {0} 1'],     # cpy_char_buffer rbp : str r0 rbp 1    # copy character display buffer to char display
+              'cpy_char_buffer':  ['str r0 {0} 0'],     # cpy_char_buffer rbp : str r0 rbp 1    # copy character display buffer to char display
 
-              'clr_char_buffer':  ['str r0 {0} 2'],     # clr_char_buffer rbp : str r0 rbp 2    # clear character display buffer
+              'clr_char_buffer':  ['str r0 {0} 1'],     # clr_char_buffer rbp : str r0 rbp 2    # clear character display buffer
 
               'clr_char_display': ['clr_char_buffer {0}\n'+   # clr_char_display rbp : clr_char_buffer rbp
                                    'cpy_char_buffer {0}'   ], #                        cpy_char_buffer rbp
                                                                                                 # clear both char display and buffer
 #--------------------------------------------------------------------------------#
-              'use_num_display':  ['ldi {0} 250'],      # use_num_display rbp : ldi rbp 250     # store number display's base pointer in rbp
-
-              'set_num':          ['str {1} {0} 0'],    # set_num rbp rNum : str rNum rbp       # set number display's buffer to number in rNum
+              'set_num':          ['str {1} {0} 2'],    # set_num rbp rNum : str rNum rbp       # set number display's buffer to number in rNum
 
               'set_numi':         ['ldi {1} {2}\n'+     # set_numi rbp rBuf imm : ldi rBuf imm
                                    'set_num {0} {1}'],  #                         set_num rbp rBuf
                                                                                                 # set number display's buffer to immediate imm
 
-              'clr_num_display':  ['str r0 {0} 1'],     # clr_num_display rbp : str r0 rbp 1    # clear number display
+              'clr_num_display':  ['str r0 {0} 3'],     # clr_num_display rbp : str r0 rbp 1    # clear number display
 
-              'num_mode_signed':  ['str r0 {0} 2'],     # num_mode_signed rbp : str r0 rbp 2    # set number display to signed mode
+              'num_mode_signed':  ['str r0 {0} 4'],     # num_mode_signed rbp : str r0 rbp 2    # set number display to signed mode
 
-              'num_mode_unsigned':['str r0 {0} 3'],     # num_mode_unsigned rbp : str r0 rbp 3  # set number display to unsigned mode
+              'num_mode_unsigned':['str r0 {0} 5'],     # num_mode_unsigned rbp : str r0 rbp 3  # set number display to unsigned mode
 #--------------------------------------------------------------------------------#
-              'use_cont_rng':     ['ldi {0} 254'],      # use_cont_rng rbp : ldi rbp 254        # store controller/RNG's base pointer to rbp
+              'get_rng':          ['lod {1} {0} 6'],    # get_rng rbp rDest : lod rDest rbp     # put a random number in rDest
 
-              'get_rng':          ['lod {1} {0} 0'],    # get_rng rbp rDest : lod rDest rbp     # put a random number in rDest
-
-              'get_cont_state':   ['lod {1} {0} 1'],    # get_cont_state rbp rDest : lod rDest rbp
+              'get_cont_state':   ['lod {1} {0} 7'],    # get_cont_state rbp rDest : lod rDest rbp
                                                                                                 # put the controller's current state in rDest
              }
     # Calculate number of operands and add to macro element
@@ -186,7 +180,7 @@ def assemble(assembly_filename, output_filename):
         return word == 'define'
     
     def is_label(word):
-        return word[0] == '.'
+        return (word[0] == '.') | ((word[-1] == ':') << 1)
     
     def is_macro(word):
         return word in macros
@@ -217,7 +211,13 @@ def assemble(assembly_filename, output_filename):
             symbols[words[1]] = int(words[2])
             offset += 1
         elif is_label(words[0]):
-            symbols[words[0]] = index - offset # This assumes we put code after the label, which many don't
+            if(is_label(words[0])==1):
+                symbols[words[0]] = index - offset # This assumes we put code after the label, which many don't
+            elif(is_label(words[0])==2):
+                symbols['.'+words[0][:-1]] = index - offset
+            else:
+                exit(f"wtf:{index+1}: Both ':' and '.' indicator used for label.")
+            # Compensates for code that is not put in the same line as the label definition
             if(len(words)<2):
                 offset+=1
     
