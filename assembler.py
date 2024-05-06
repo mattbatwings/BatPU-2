@@ -1,23 +1,51 @@
 # All rights to this code go to the original owner, @MattBatWings
 
+# str.find() but with multi-delimiter support
+def strfind(string, delimiters, start=0):
+    output=[]
+    idx=start
+    try:
+        while(string[idx] not in delimiters):
+            idx += 1
+    except IndexError:
+        return -1
+    return idx
+# inverted ffind()
+def inverted_strfind(string, delimiters, start=0):
+    output=[]
+    idx=start
+    try:
+        while(string[idx] in delimiters):
+            idx += 1
+    except IndexError:
+        return -1
+    return idx
+# str.split() but with multi-delimiter support
+def split_string(string:str, delimiters:str):
+    idx=0
+    output=[]
+    while(idx<len(string)):
+        idx=inverted_strfind(string, delimiters, idx)
+        if(idx==-1):
+            break
+        idx_end=strfind(string, delimiters, idx)
+        if(idx_end==-1):
+            output.append(string[idx:])
+            break
+        output.append(string[idx:idx_end])
+        idx=idx_end
+    return output
+
 def assemble(assembly_filename, output_filename):
     assembly_file = open(assembly_filename, 'r')
     machine_code_file = open(output_filename, 'w')
     lines = (line.strip() for line in assembly_file)
 
     def remove_comment(comment_symbols, line):
-        for c in comment_symbols:
-            line=line.split(c)[0]
-        return line
-    def ffind(str, chars):
-        v=[]
-        for c in chars:
-            v.append(str.find(c))
-        v=[x for x in v if(x!=-1)]
-        if(len(v)==0):
-            return len(str)
-        else:
-            return min(v)
+        index=strfind(line, comment_symbols)
+        if(index==-1):
+            return line
+        return line[:index]
 
     # Remove comments and blanklines
     lines = [remove_comment("/;#", line).strip() for line in lines]
@@ -32,7 +60,7 @@ def assemble(assembly_filename, output_filename):
 
     # Operands
     # Format : '<1 char label>':[<position>, <bit length>, <1: signed, 0: unsigned>, "<full name>"]
-    ops     = {
+    OPERANDS= {
                'F' : [8,  4, 0, "first register"], # First register
                'A' : [4,  4, 0, "register A"],     # Register A
                'B' : [0,  4, 0, "register B"],     # Register B
@@ -44,7 +72,7 @@ def assemble(assembly_filename, output_filename):
     
     # Pseudo-instructions
     # Format : 'label':['<resolution as formatted string>']
-    pseudoins = {
+    PSEUDOINS = {
                  'cmp':['sub r0 {0} {1}'],  # cmp : sub r0 A B
                  'mov':['add {0} {1} r0'],  # mov : add dest A r0
                  'lsh':['add {0} {1} {1}'], # lsh : add dest A A
@@ -53,18 +81,18 @@ def assemble(assembly_filename, output_filename):
                  'not':['nor {0} {1} r0'],  # not : nor dest A r0
                 }
     # Calculate number of operands and add to pseudo-instruction element
-    for pop in pseudoins:
-        popcodeinfo=pseudoins[pop]
+    for pop in PSEUDOINS:
+        popcodeinfo=PSEUDOINS[pop]
         nums=[int(word[1:len(word)-1]) for word in popcodeinfo[0].split() if word[0]=='{']
         if(len(nums)==0):
             pseudoins[pop].insert(0, 0)
         else:
-            pseudoins[pop].insert(0, max(nums)+1)
+            PSEUDOINS[pop].insert(0, max(nums)+1)
     
     # Macros
     # Format : 'label':['<resolution as formatted string>']
     # - formatted string must be separated by newlines ('\n')
-    macros = {
+    MACROS = {
               'nnd':['and {0} {1} {2}\n'+   # nnd dest A B : and dest A B
                      'not {0} {0}'       ], #                not dest dest   # do the bitwise "not AND" operation on registers A, B and store the result in dest
 
@@ -139,34 +167,75 @@ def assemble(assembly_filename, output_filename):
                                                                                                 # put the controller's current state in rDest
              }
     # Calculate number of operands and add to macro element
-    for macro in macros:
-        macroinfo=macros[macro]
+    for macro in MACROS:
+        macroinfo=MACROS[macro]
         nums=[int(word[1:len(word)-1]) for word in macroinfo[0].split() if word[0]=='{']
         if(len(nums)==0):
-            macros[macro].insert(0, 0)
+            MACROS[macro].insert(0, 0)
         else:
-            macros[macro].insert(0, max(nums)+1)
+            MACROS[macro].insert(0, max(nums)+1)
     
     # Format: '<label>':'<operand flags in order of use in opcode>'
-    opcodes = {
-               'nop':'',    # nop                   : Does nothing
-               'hlt':'',    # hlt                   : Halts computer
-               'add':'FAB', # add dest A B          : pseudo-code: dest <- A + B
-               'sub':'FAB', # sub dest A B          : pseudo-code: dest <- A - B
-               'nor':'FAB', # nor dest A B          : pseudo-code: dest <- !(A | B)
-               'and':'FAB', # and dest A B          : pseudo-code: dest <- A & B
-               'xor':'FAB', # xor dest A B          : pseudo-code: dest <- A ^ B
-               'rsh':'FA',  # rsh dest A            : pseudo-code: dest <- A >> 1 (logical shift)
-               'ldi':'FI',  # ldi dest immediate    : pseudo-code: dest <- immediate
-               'adi':'FI',  # adi dest immediate    : pseudo-code: dest <- dest + immediate
-               'jmp':'M',   # jmp address           : pseudo-code: PC <- address
-               'brh':'CM',  # brh condition address : pseudo-code: PC <- condition ? address : PC + 1
-               'cal':'M',   # cal address           : pseudo-code: PC <- address (and push PC + 1 to stack)
-               'ret':'',    # ret                   : pseudo-code: PC <- top of stack (and pop stack)
-               'lod':'FAO', # lod dest A offset     : pseudo-code: dest <- mem[A + offset]
-               'str':'FAO'  # str source A offset   : pseudo-code: mem[A + offset] <- source
+    # [A=0] means operand A is optional and defaults to 0
+    OPCODES = {
+               'nop':'',      # nop                       : Does nothing
+               'hlt':'',      # hlt                       : Halts machine
+               'add':'FAB',   # add dest A B              : pseudo-code: dest <- A + B
+               'sub':'FAB',   # sub dest A B              : pseudo-code: dest <- A - B
+               'nor':'FAB',   # nor dest A B              : pseudo-code: dest <- !(A | B)
+               'and':'FAB',   # and dest A B              : pseudo-code: dest <- A & B
+               'xor':'FAB',   # xor dest A B              : pseudo-code: dest <- A ^ B
+               'rsh':'FA',    # rsh dest A                : pseudo-code: dest <- A >> 1 (logical shift)
+               'ldi':'FI',    # ldi dest immediate        : pseudo-code: dest <- immediate
+               'adi':'FI',    # adi dest immediate        : pseudo-code: dest <- dest + immediate
+               'jmp':'M',     # jmp address               : pseudo-code: PC <- address
+               'brh':'CM',    # brh condition address     : pseudo-code: PC <- condition ? address : PC + 1
+               'cal':'M',     # cal address               : pseudo-code: PC <- address (and push PC + 1 to stack)
+               'ret':'',      # ret                       : pseudo-code: PC <- top of stack (and pop stack)
+               'lod':'FA[O=0]', # lod dest A [offset=0]   : pseudo-code: dest <- mem[A + offset]
+               'str':'FA[O=0]'  # str source A [offset=0] : pseudo-code: mem[A + offset] <- source
               } # Opcodes
-    for index, symbol in enumerate(opcodes):
+
+    # Make opcodes more machine-friendly
+    for opcode in OPCODES:
+        processed_opcode=[]
+        operands=OPCODES[opcode]
+        idx=0
+        minimum_operands=0
+        while(idx<len(operands)):
+            if(operands[idx]=='['):
+                idx_end=operands.find(']', idx)
+                if(idx_end==-1):
+                    exit(f"Syntax Error: No closing brace for operand \'{operands[idx+1]}\' in opcode \'{opcode}\'!")
+                substr=operands[idx+1:idx_end]
+                if(substr[2:]==''):
+                    exit(f"wtf: No default defined operand \'{substr[0]}\' for opcode \'{opcode}\'!")
+                processed_opcode.append([substr[0], int(substr[2:])])
+                idx=idx_end+1
+                minimum_operands-=1
+            else:
+                idx_end=operands.find('[', idx)
+                if(idx_end==-1):
+                    idx_end += len(operands) + 1
+                substr=operands[idx:idx_end]
+                processed_opcode = processed_opcode + [[x] for x in substr]
+                idx=idx_end
+        maximum_operands=len(processed_opcode)
+        minimum_operands=minimum_operands+maximum_operands
+        processed_opcode=[processed_opcode, minimum_operands, maximum_operands]
+        OPCODES[opcode]=processed_opcode
+
+    # Validity check
+    for opcode in OPCODES:
+        operands=OPCODES[opcode][0]
+        maxim=1
+        for idx, operand in enumerate(operands):
+            if(maxim <= len(operand)):
+                maxim=len(operand)
+            else:
+                exit(f"wtf: Optional operand \'{operands[idx-1][0]}\' declared inbetween necessary ones in \'{opcode}\'!")
+
+    for index, symbol in enumerate(OPCODES):
         symbols[symbol] = index  # Add corresponding numeral opcode
 
     conditions = [ 'eq'  , 'ne'     , 'ge'   , 'lt'      ,
@@ -183,7 +252,7 @@ def assemble(assembly_filename, output_filename):
         return (word[0] == '.') | ((word[-1] == ':') << 1)
     
     def is_macro(word):
-        return word in macros
+        return word in MACROS
     
     # Resolve macros
     cont=True
@@ -196,7 +265,7 @@ def assemble(assembly_filename, output_filename):
                 cont=True
                 macroinfo=macros[words[0]]
                 if macroinfo[0] != (len(words)-1):
-                    exit(f"Incorrect number of operands for macro \'{words[0]}\' at line {index+1}")
+                    exit(f"Error:{index+1}: Incorrect number of operands for macro \'{words[0]}\'")
                 gen_lines= macroinfo[1].format(*words[1:]).split('\n')
                 gen_lines.reverse()
                 lines.pop(index)
@@ -216,7 +285,7 @@ def assemble(assembly_filename, output_filename):
             elif(is_label(words[0])==2):
                 symbols['.'+words[0][:-1]] = index - offset
             else:
-                exit(f"wtf:{index+1}: Both ':' and '.' indicator used for label.")
+                exit(f"Syntax Error:{index+1}: Both ':' and '.' indicator used for label.")
             # Compensates for code that is not put in the same line as the label definition
             if(len(words)<2):
                 offset+=1
@@ -233,93 +302,55 @@ def assemble(assembly_filename, output_filename):
     for i, b in enumerate(lines):
         words = [word.lower() for word in b.split()]
         if(len(words)==0): continue
-        if(is_label(words[0])):
-            lines[i]=b[ffind(b," \t")+1:].strip()
+        if(is_label(words[0])!=0):
+            end_of_label=strfind(b, " \t")
+            if(end_of_label==-1):
+                lines[i]=''
+            else:
+                lines[i]=b[end_of_label:].strip()
         elif(is_definition(words[0])):
             lines[i]=''
     lines=[line.strip() for line in lines]
 
     for i in range(len(lines)):
-        words = [word.lower() for word in lines[i].split()]
+        words = [word.lower() for word in split_string(lines[i], ", ")]
         if len(words)==0: continue
         
         # Pseudo-instructions
-        if words[0] in pseudoins:
+        if words[0] in PSEUDOINS:
             popcode     = words[0]
-            popcodeinfo = pseudoins[popcode]
+            popcodeinfo = PSEUDOINS[popcode]
             if popcodeinfo[0] != len(words)-1:
-                exit(f"Incorrect number of operands for pseudo-instruction \'{popcode}\' at line {i+1}")
+                exit(f"Error:{i+1}: Incorrect number of operands for pseudo-instruction \'{popcode}\'")
             words=popcodeinfo[1].format(*words[1:]).split()
         
         # Begin machine code translation
-        opcode = words[0]
+        current_opcode = words[0]
         try:
-            machine_code = symbols[opcode] << 12
+            machine_code = symbols[current_opcode] << 12
         except KeyError:
-            exit(f"Unknown opcode \'{opcode}\' at line {i+1}")
+            exit(f"Error:{i+1}:Unknown opcode \'{current_opcode}\'")
         words = [resolve(word) for word in words]
 
         # Number of operands check
-        if len(opcodes[opcode]) != (len(words)-1):
-            exit(f'Incorrect number of operands for \'{opcode}\' on line {i+1}')
-
-        if opcode in ['rsh', 'ldi', 'adi', 'brh'] and len(words) != 3:
-            exit(f'Incorrect number of operands for {opcode} on line {i}')
-
-        if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'lod', 'str'] and len(words) != 4:
-            exit(f'Incorrect number of operands for {opcode} on line {i}')
-
-        # First register
-        if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'rsh', 'ldi', 'adi', 'lod', 'str']:
-            if words[1] != (words[1] % (2 ** 4)):
-                exit(f'Invalid first register for {opcode} on line {i}')
-            machine_code |= (words[1] << 8)
-
-        # Reg A
-        if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'rsh', 'lod', 'str']:
-            if words[2] != (words[2] % (2 ** 4)):
-                exit(f'Invalid reg A for {opcode} on line {i}')
-            machine_code |= (words[2] << 4)
-
-        # Reg B
-        if opcode in ['add', 'sub', 'nor', 'and', 'xor']:
-            if words[3] != (words[3] % (2 ** 4)):
-                exit(f'Invalid reg B for {opcode} on line {i}')
-            machine_code |= words[3]
-
-        # Immediate
-        if opcode in ['ldi', 'adi']:
-            if words[2] < -128 or words[2] > 255: # 2s comp [-128, 127] or uint [0, 255]
-                exit(f'Invalid immediate for {opcode} on line {i}')
-            machine_code |= words[2] & (2 ** 8 - 1)
-        
-        # Instruction memory address
-        if opcode in ['jmp', 'brh', 'cal']:
-            if words[-1] != (words[-1] % (2 ** 10)):
-                exit(f'Invalid instruction memory address for {opcode} on line {i}')
-            machine_code |= words[-1]
-
-        # Condition
-        if opcode in ['brh']:
-            if words[1] != (words[1] % (2 ** 2)):
-                exit(f'Invalid condition for {opcode} on line {i}')
-            machine_code |= (words[1] << 10)
-
-        # Offset
-        if opcode in ['lod', 'str']:
-            if words[3] < -8 or words[3] > 7: # 2s comp [-7, 8]
-                exit(f'Invalid offset for {opcode} on line {i}')
-            machine_code |= words[3] & (2 ** 4 - 1)
+        if(  OPCODES[current_opcode][-2] > (len(words)-1)):
+            print(f'!({OPCODES[current_opcode][-1]} > {len(words)-1})')
+            exit(f'Error:{i+1}: Not enough operands for \'{current_opcode}\'')
+        elif(OPCODES[current_opcode][-1] < (len(words)-1)):
+            print(f'!({OPCODES[current_opcode][-1]} < {len(words)-1})')
+            exit(f'Error:{i+1}: Too many operands for \'{current_opcode}\'')
 
         # Check operands
-        for idx,op in enumerate(opcodes[opcode]):
-            opinfo = ops[op]
+        for idx, opcode in enumerate(OPCODES[current_opcode][0]):
+            if((len(words)-2)<idx):
+                words.append(opcode[1])
+            opinfo = OPERANDS[opcode[0]]
             mask   = (1<<opinfo[1]) - 1
             if opinfo[2] and (words[idx+1]<0):
                 words[idx+1]=(~words[idx+1])+1
             if words[idx+1] != (words[idx+1] & mask):
-                exit(f'Invalid {opinfo[3]} for \'{opcode}\' on line {i+1}')
-            machine_code |= (words[idx+1] & mask) << opinfo[0] # Just to be safe, it's ANDEed with the mask
+                exit(f'Error:{i+1}: Invalid {opinfo[3]} for \'{current_opcode}\'')
+            machine_code |= (words[idx+1] & mask) << opinfo[0] # Just to be safe, it's ANDed with the mask
 
         as_string = bin(machine_code)[2:].rjust(16, '0')
         machine_code_file.write(f'{as_string}\n')
