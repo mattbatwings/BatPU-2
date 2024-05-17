@@ -1,9 +1,9 @@
 from assembler import assemble
 import sys
-# from simulator import simulate
+from common import *
 
 # MAJOR, MINOR, PATCH, PRE-RELEASE IDENTIFIER, BUILD (https://semver.org)
-VERSION = ['1','1','2','BETA','']
+VERSION = ['1','2','0','BETA','']
 # display like "MAJOR.MINOR.PATCH[-PRE-RELEASE IDENT][+BUILD]", [] = omitted if empty
 VER_FMT = "{0}.{1}.{2}[-{3}][+{4}]"
 
@@ -23,14 +23,6 @@ credits_mess = """Credits:
   Modifications by @ProtoSebastian at
    GitHub: https://github.com/ProtoSebastian"""
 
-def find_nz(string:str, delimiter:str, start:int=0):
-    output=str.find(string, delimiter, start)
-    if(output==-1):
-        return output+len(string)+1
-    else:
-        return output
-
-# TODO
 def print_version():
     print(credits_mess)
     to_print = ""
@@ -111,15 +103,18 @@ def main():
         else:
             if(input_files!=0):
                 # ruh roh
-                exit("More than 1 input files specified.")
+                fatal_error(sys.argv[0], "More than 1 input files specified.")
             input_file=term
             input_files+=1
         idx += 1
     if(input_file==''):
         print_help()
-        exit("Input file not specified.")
-    assemble(input_file, output_file)
-    print("Compilation successful.")
+        fatal_error(sys.argv[0], "No input files were specified.")
+    try:
+        assemble(input_file, output_file)
+    except FileNotFoundError:
+        fatal_error(sys.argv[0], f"{input_file}: File not found.")
+    print("main.py: Compilation successful.")
     # simulate('output.mc')
 
 

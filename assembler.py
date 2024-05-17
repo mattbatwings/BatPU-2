@@ -1,51 +1,10 @@
 # All rights to this code go to the original owner, @MattBatWings
-
-# str.find() but with multi-delimiter support
-def strfind(string, delimiters, start=0):
-    output=[]
-    idx=start
-    try:
-        while(string[idx] not in delimiters):
-            idx += 1
-    except IndexError:
-        return -1
-    return idx
-# inverted ffind()
-def inverted_strfind(string, delimiters, start=0):
-    output=[]
-    idx=start
-    try:
-        while(string[idx] in delimiters):
-            idx += 1
-    except IndexError:
-        return -1
-    return idx
-# str.split() but with multi-delimiter support
-def split_string(string:str, delimiters:str):
-    idx=0
-    output=[]
-    while(idx<len(string)):
-        idx=inverted_strfind(string, delimiters, idx)
-        if(idx==-1):
-            break
-        idx_end=strfind(string, delimiters, idx)
-        if(idx_end==-1):
-            output.append(string[idx:])
-            break
-        output.append(string[idx:idx_end])
-        idx=idx_end
-    return output
+from common import *
 
 def assemble(assembly_filename, output_filename):
     assembly_file = open(assembly_filename, 'r')
     machine_code_file = open(output_filename, 'w')
     lines = (line.strip() for line in assembly_file)
-
-    def remove_comment(comment_symbols, line):
-        index=strfind(line, comment_symbols)
-        if(index==-1):
-            return line
-        return line[:index]
 
     # Remove comments and blanklines
     lines = [remove_comment("/;#", line).strip() for line in lines]
