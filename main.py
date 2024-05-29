@@ -3,7 +3,7 @@ import sys
 from common import *
 
 # MAJOR, MINOR, PATCH, PRE-RELEASE IDENTIFIER, BUILD (https://semver.org)
-VERSION = ['1','2','0','BETA','']
+VERSION = ['2','0','0','BETA','']
 # display like "MAJOR.MINOR.PATCH[-PRE-RELEASE IDENT][+BUILD]", [] = omitted if empty
 VER_FMT = "{0}.{1}.{2}[-{3}][+{4}]"
 
@@ -57,7 +57,7 @@ def print_help():
 
 def handle_unknown_switch(statement: str):
     print_help()
-    exit(f"Unknown switch statement '{statement}'!")
+    fatal_error('main', f"Unknown switch statement '{statement}'.")
 
 def main():
     # Fancy switch processing
@@ -103,18 +103,19 @@ def main():
         else:
             if(input_files!=0):
                 # ruh roh
-                fatal_error(sys.argv[0], "More than 1 input files specified.")
+                fatal_error('main', "More than 1 input files specified.")
             input_file=term
             input_files+=1
         idx += 1
     if(input_file==''):
         print_help()
-        fatal_error(sys.argv[0], "No input files were specified.")
-    try:
-        assemble(input_file, output_file)
-    except FileNotFoundError:
-        fatal_error(sys.argv[0], f"{input_file}: File not found.")
-    print("main.py: Compilation successful.")
+        fatal_error('main', "No input files were specified.")
+
+    # Assemble
+    assemble(input_file, output_file)
+
+    # Success message
+    print("main: Assembly successful.")
     # simulate('output.mc')
 
 

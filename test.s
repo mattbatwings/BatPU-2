@@ -7,7 +7,7 @@ define B 4
   ldi r4 1 ; mask = 0x01
 .loop
   cmp r3 r0
-  brh = .done      ; exit loop if B is 0
+  brh = .done       ; exit loop if B is 0
   and r5 r3 r4      ; r5 = B & mask
   cmp r5 r0
   brh ne .add       ; add A to acc if LSB is set
@@ -19,5 +19,5 @@ define B 4
   rsh r3 r3         ; B = B >> 1
   jmp .loop
 done:               ; different format label test
-  str r1 r0 0
+  str r1 r0 0       ; store result in memory at index 0
   hlt               ; halt
