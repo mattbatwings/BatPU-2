@@ -3,7 +3,7 @@ import sys
 from common import *
 
 # MAJOR, MINOR, PATCH, PRE-RELEASE IDENTIFIER, BUILD (https://semver.org)
-VERSION = ['2','0','0','BETA','']
+VERSION = ['2','1','0','BETA','']
 # display like "MAJOR.MINOR.PATCH[-PRE-RELEASE IDENT][+BUILD]", [] = omitted if empty
 VER_FMT = "{0}.{1}.{2}[-{3}][+{4}]"
 
@@ -16,11 +16,11 @@ Options:
 
 # Credits/license message (TODO: Add license from original once it's licensed)
 credits_mess = """Credits:
-  Original author is @MattBatWings at
+  Original code & ISA author is @MattBatWings at
    GitHub: https://github.com/MattBatWings
    YouTube: https://youtube.com/@MattBatWings
 
-  Modifications by @ProtoSebastian at
+  Modifications to Matt's code by @ProtoSebastian at
    GitHub: https://github.com/ProtoSebastian"""
 
 def print_version():

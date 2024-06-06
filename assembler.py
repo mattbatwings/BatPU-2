@@ -149,6 +149,8 @@ def is_macro(word):
 def resolve(word, line, symbols):
     if word[0] in '-0123456789':
         return int(word)
+    if word[0] == '$':
+        return int(word[1:], 16)
     if symbols.get(word) is None:
         fatal_error("assembler", f'{assembly_filename}:{line}: Could not resolve \'{word}\'.')
     return symbols[word]
@@ -282,12 +284,15 @@ def assemble(assembly_filename, output_filename):
             symbols[words[1]] = int(words[2])
             offset += 1
         elif is_label(words[0]):
-            if(is_label(words[0])==1):
-                symbols[words[0]] = index - offset # This assumes we put code after the label, which many don't
-            elif(is_label(words[0])==2):
+            result = is_label(words[0])
+            if(result==1):
+                symbols[words[0]] = index - offset
+            elif(result==2):
                 symbols['.'+words[0][:-1]] = index - offset
+            elif(result==3):
+                symbols[words[0][:-1]] = index - offset
             else:
-                fatal_error('assembler', f"pre-assembly stage: syntax error: {assembly_filename}:{line_number}: Both \':\' and \'.\' indicator used for label.")
+                fatal_error('assembler', f"pre-assembly stage: UNKNOWN ERROR: {assembly_filename}:{line_number}: I don\'t know what went wrong. You should open an issue about this!")
             # Compensates for code that is not put in the same line as the label definition
             if(len(words)<2):
                 offset+=1
