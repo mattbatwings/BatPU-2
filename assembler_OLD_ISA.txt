@@ -1,0 +1,113 @@
+###- NATIVE INSTRUCTIONS -###
+# Format: '<label>':[<opcode>, '<operand flags in order of use in opcode>', <opcode specific mask>]
+# [A=0] means operand A is optional and defaults to 0
+OPCODES = {
+           'nop':[0x0, '', 0x0000],        # nop                     : Does nothing
+           'hlt':[0x1, '', 0x0000],        # hlt                     : Halts machine
+           'add':[0x2, 'FAB', 0x0000],     # add dest A B            : pseudo-code: dest <- A + B
+           'sub':[0x3, 'FAB', 0x0000],     # sub dest A B            : pseudo-code: dest <- A - B
+           'nor':[0x4, 'FAB', 0x0000],     # nor dest A B            : pseudo-code: dest <- !(A | B)
+           'and':[0x5, 'FAB', 0x0000],     # and dest A B            : pseudo-code: dest <- A & B
+           'xor':[0x6, 'FAB', 0x0000],     # xor dest A B            : pseudo-code: dest <- A ^ B
+           'rsh':[0x7, 'FA', 0x0000],      # rsh dest A              : pseudo-code: dest <- A >> 1 (logical shift)
+           'ldi':[0x8, 'FI', 0x0000],      # ldi dest immediate      : pseudo-code: dest <- immediate
+           'adi':[0x9, 'FI', 0x0000],      # adi dest immediate      : pseudo-code: dest <- dest + immediate
+           'jmp':[0xA, 'M', 0x0000],       # jmp address             : pseudo-code: PC <- address
+           'brh':[0xB, 'CM', 0x0000],      # brh condition address   : pseudo-code: PC <- condition ? address : PC + 1
+           'cal':[0xC, 'M', 0x0000],       # cal address             : pseudo-code: PC <- address (and push PC + 1 to stack)
+           'ret':[0xD, '', 0x0000],        # ret                     : pseudo-code: PC <- top of stack (and pop stack)
+           'lod':[0xE, 'FA[O=0]', 0x0000], # lod dest A [offset=0]   : pseudo-code: dest <- mem[A + offset]
+           'str':[0xF, 'FA[O=0]', 0x0000]  # str source A [offset=0] : pseudo-code: mem[A + offset] <- source
+          } # Opcodes
+
+###- PSEUDO-INSTRUCTIONS -###
+# Pseudo-instructions
+# Format : 'label':['<resolution as formatted string>']
+PSEUDOINS = {
+             'cmp':['sub r0 {0} {1}'],  # cmp : sub r0 A B
+             'mov':['add {0} {1} r0'],  # mov : add dest A r0
+             'lsh':['add {0} {1} {1}'], # lsh : add dest A A
+             'inc':['adi {0} 1'],       # inc : adi dest 1
+             'dec':['adi {0} -1'],      # dec : adi dest -1
+             'not':['nor {0} {1} r0'],  # not : nor dest A r0
+            }
+
+###- MACROS (MULTI-LINE PSEUDO-INSTRUCTIONS) -###
+# Macros
+# Format : 'label':['<resolution as formatted string>']
+# - formatted string must be separated by newlines ('\n')
+MACROS = {
+          'nnd':['and {0} {1} {2}\n'+   # nnd dest A B : and dest A B
+                 'not {0} {0}'       ], #                not dest dest   # do the bitwise "not AND" operation on registers A, B and store the result in dest
+
+          'xnr':['xor {0} {1} {2}\n'+   # xnr dest A B : xor dest A B
+                 'not {0} {0}'       ], #                not dest dest   # do the bitwise "not XOR" operation on registers A, B and store the result in dest
+
+          'orr':['nor {0} {1} {2}\n'+   # orr dest A B : nor dest A B
+                 'not {0} {0}'       ], #                not dest dest   # do the bitwise "OR" operation on registers A, B and store the result in dest
+
+          'nim':['not {0} {2}\n'+       # nim dest A B : not dest B
+                 'and {0} {0} {1}'   ], #                and dest dest A # do the bitwise "not IMPLIES" operation on registers A, B and store the result in dest
+                                        # !(A -> B) = A & (!B)
+
+          'imp':["nim {0} {1} {2}\n"+   # imp dest A B : nim dest A B
+                 "not {0} {0}"       ], #                not dest dest   # do the bitwise "IMPLIES" operation on registers A, B and store the result in dest
+                                        # A -> B = !(!(A -> B))
+#--------------------------------------------------------------------------------#
+          'use_devices':      ['ldi {0} 248'],      # use_display rbp : ldi rbp 240         # store pixel display's base pointer in rbp
+
+          'set_x':            ['str {1} {0} -8'],   # set_x rbp rX : str rX rbp 0           # store value at rX into pixel display's X port
+
+          'set_xi':           ['ldi {1} {2}\n'+     # set_xi rbp rBuf imm : ldi rBuf imm
+                               'set_x {0} {1}' ],   #                       set_x rbp rBuf  # store immediate value into pixel display's X port
+
+          'set_y':            ['str {1} {0} -7'],   # set_y rbp rY : str rY rbp 1           # store value at rY into pixel display's Y port
+
+          'set_yi':           ['ldi {1} {2}\n'+     # set_yi rbp rBuf imm : ldi rBuf imm
+                               'set_y {0} {1}' ],   #                       set_y rbp rBuf  # store immediate value into pixel display's Y port
+
+          'set_pixel':        ['str r0 {0} -6'],    # set_pixel rbp : str r0 rbp 2          # trigger pixel display's Draw Pixel port to draw current pixel
+
+          'clr_pixel':        ['str r0 {0} -5'],    # clr_pixel rbp : str r0 rbp 3          # trigger pixel display's Clear Pixel port to clear current pixel
+
+          'get_pixel':        ['lod {1} {0} -4'],   # get_pixel rbp rDest : lod rDest rbp 4 # load pixel at current pixel position
+
+          'cpy_disp_buffer':  ['str r0 {0} -3'],    # cpy_disp_buffer rbp : str r0 rbp 5    # copy pixel display buffer to screen
+
+          'clr_disp_buffer':  ['str r0 {0} -2'],    # clr_disp_buffer rbp : str r0 rbp 6    # clear pixel display buffer
+
+          'clr_display':['clr_disp_buffer {0}\n'+   # clr_display rbp : clr_disp_buffer rbp
+                         'cpy_disp_buffer {0}'   ], #                   cpy_disp_buffer rbp # clear both display and display buffer
+#--------------------------------------------------------------------------------#
+          'add_char':         ['str {1} {0} -1'],   # add_char rbp rChar  : str rChar rbp 0 # append character at rChar to character display buffer
+
+          'add_chari':        ['ldi {1} {2}\n'+     # add_chari rbp rBuf imm : ldi rBuf imm
+                               'add_char {0} {1}'], #                          add_char rbp rBuf
+                                                                                            # append immediate character imm to character display buffer
+
+          'cpy_char_buffer':  ['str r0 {0} 0'],     # cpy_char_buffer rbp : str r0 rbp 1    # copy character display buffer to char display
+
+          'clr_char_buffer':  ['str r0 {0} 1'],     # clr_char_buffer rbp : str r0 rbp 2    # clear character display buffer
+
+          'clr_char_display': ['clr_char_buffer {0}\n'+   # clr_char_display rbp : clr_char_buffer rbp
+                               'cpy_char_buffer {0}'   ], #                        cpy_char_buffer rbp
+                                                                                            # clear both char display and buffer
+#--------------------------------------------------------------------------------#
+          'set_num':          ['str {1} {0} 2'],    # set_num rbp rNum : str rNum rbp       # set number display's buffer to number in rNum
+
+          'set_numi':         ['ldi {1} {2}\n'+     # set_numi rbp rBuf imm : ldi rBuf imm
+                               'set_num {0} {1}'],  #                         set_num rbp rBuf
+                                                                                            # set number display's buffer to immediate imm
+
+          'clr_num_display':  ['str r0 {0} 3'],     # clr_num_display rbp : str r0 rbp 1    # clear number display
+
+          'num_mode_signed':  ['str r0 {0} 4'],     # num_mode_signed rbp : str r0 rbp 2    # set number display to signed mode
+
+          'num_mode_unsigned':['str r0 {0} 5'],     # num_mode_unsigned rbp : str r0 rbp 3  # set number display to unsigned mode
+#--------------------------------------------------------------------------------#
+          'get_rng':          ['lod {1} {0} 6'],    # get_rng rbp rDest : lod rDest rbp     # put a random number in rDest
+
+          'get_cont_state':   ['lod {1} {0} 7'],    # get_cont_state rbp rDest : lod rDest rbp
+                                                                                            # put the controller's current state in rDest
+         }
+

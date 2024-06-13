@@ -1,0 +1,13 @@
+# Operands
+# Format : '<label>':[<position>, <bit length>, <1: signed, 0: unsigned>,
+#                     "<full name>"]
+OPS     = {
+           'F'         : [8,  4, 0, "first register"], # First register
+           'A'         : [4,  4, 0, "register A"],     # Register A
+           'B'         : [0,  4, 0, "register B"],     # Register B
+           'I'         : [0,  8, 1, "immediate"],      # Immediate
+           'C'         : [10, 2, 0, "condition"],      # Condition
+           'O'         : [0,  4, 1, "offset"],         # Offset
+           'o'         : [12, 4, 0, "opcode"],         # Opcode
+           'M'         : [0, 10, 0, "memory address"], # Memory address
+          }

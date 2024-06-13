@@ -10,14 +10,14 @@ STATES = {
 # Format : '<label>':[<position>, <bit length>, <1: signed, 0: unsigned>,
 #                     "<full name>"]
 OPS     = {
-           'First'     : [8,  4, 0, "first register"], # First register
-           'A'         : [4,  4, 0, "register A"],     # Register A
-           'B'         : [0,  4, 0, "register B"],     # Register B
-           'Immediate' : [0,  8, 1, "immediate"],      # Immediate
-           'Condition' : [10, 2, 0, "condition"],      # Condition
-           'Offset'    : [0,  4, 1, "offset"],         # Offset
-           'Opcode'    : [12, 4, 0, "opcode"],         # Opcode
-           'Mem'       : [0, 10, 0, "memory address"], # Memory address
+           'F'         : [0,  4, 0, "register C"],     # Register C
+           'A'         : [8,  4, 0, "register A"],     # Register A
+           'B'         : [4,  4, 0, "register B"],     # Register B
+           'I'         : [0,  8, 1, "immediate"],      # Immediate
+           'C'         : [10, 2, 0, "condition"],      # Condition
+           'O'         : [0,  4, 1, "offset"],         # Offset
+           'o'        : [12, 4, 0, "opcode"],         # Opcode
+           'M'         : [0, 10, 0, "memory address"], # Memory address
           }
 
 class batpu_v2:
@@ -177,7 +177,7 @@ class batpu_v2:
     def step(self):
         instruction = self.read_progmem(self.PC)
         self.decompose_instruction(instruction)
-        self.OPCODES[self.OPERANDS['Opcode']]()
+        self.OPCODES[self.OPERANDS['o']]()
 
     def coredump(self, message):
         # dump flags
@@ -237,72 +237,72 @@ class batpu_v2:
         self.coredump("Processor halted.")
 
     def ADD(self):
-        # adds 2 registers
+        # adds A and B, puts result in C
         new_value = self.read_reg(self.OPERANDS['A']) + self.read_reg(self.OPERANDS['B'])
         self.handle_flags(new_value)
-        self.write_reg(self.OPERANDS['First'], new_value)
+        self.write_reg(self.OPERANDS['F'], new_value)
         self.advance()
 
     def SUB(self):
-        # subtracts 2 registers
+        # subtracts B from A, puts result in C
         new_value = self.read_reg(self.OPERANDS['A']) - self.read_reg(self.OPERANDS['B'])
         self.handle_flags(new_value)
-        self.write_reg(self.OPERANDS['First'], new_value)
+        self.write_reg(self.OPERANDS['F'], new_value)
         self.advance()
 
     def NOR(self):
-        # does the NOR operation on A and B, puts result in First
+        # does the NOR operation on A and B, puts result in C
         new_value = ~(self.read_reg(self.OPERANDS['A']) |
                       self.read_reg(self.OPERANDS['B']))
         self.handle_flags(new_value)
-        self.write_reg(self.OPERANDS['First'], new_value)
+        self.write_reg(self.OPERANDS['F'], new_value)
         self.advance()
 
     def AND(self):
-        # does the AND operation on A and B, puts result in First
+        # does the AND operation on A and B, puts result in C
         new_value = self.read_reg(self.OPERANDS['A']) & self.read_reg(self.OPERANDS['B'])
         self.handle_flags(new_value)
-        self.write_reg(self.OPERANDS['First'], new_value)
+        self.write_reg(self.OPERANDS['F'], new_value)
         self.advance()
 
     def XOR(self):
-        # does the XOR operation on A and B, puts result in First
+        # does the XOR operation on A and B, puts result in C
         new_value = self.read_reg(self.OPERANDS['A']) ^ self.read_reg(self.operands['B'])
-        self.write_reg(self.OPERANDS['First'], new_value)
+        self.write_reg(self.OPERANDS['F'], new_value)
         self.advance()
 
     def RSH(self):
-        # shifts bits in A right by 1 place, puts result in First
+        # shifts bits in A right by 1 place, puts result in C
         self.write_reg(
-                       self.OPERANDS['First'],
+                       self.OPERANDS['F'],
                        self.read_reg(self.OPERANDS['A']) >> 1
                       )
         self.advance()
 
     def LDI(self):
-        # puts Immediate into First
+        # puts Immediate into C
         self.write_reg(
-                       self.OPERANDS['First'],
-                       self.OPERANDS['Immediate']
+                       self.OPERANDS['F'],
+                       self.OPERANDS['I']
                       )
         self.advance()
 
     def ADI(self):
-        # adds Immediate with First
-        new_value = self.read_reg(self.OPERANDS['First']) + self.OPERANDS['Immediate']
+        # adds Immediate with C
+        new_value = self.read_reg(self.OPERANDS['F']) + self.OPERANDS['I']
         self.handle_flags(new_value)
-        self.write_reg(self.OPERANDS['First'], new_value)
+        self.write_reg(self.OPERANDS['F'], new_value)
         self.advance()
 
     def JMP(self):
         # set Program Counter to Address
-        self.jump(self.OPERANDS['Mem'])
+        self.jump(self.OPERANDS['M'])
 
     def BRH(self):
         # set Program Counter to Address if condition is true
         cond_true = False
 
-        match (self.OPERANDS['Condition']):
+        match (self.OPERANDS['C']):
             case 0b00:
                 cond_true = (self.FLAGS['Z'] == 1)
             case 0b01:
@@ -327,21 +327,21 @@ class batpu_v2:
         self.jump(self.pop_stack())
 
     def LOD(self):
-        # load word at memory address in A (+ offset) into First
+        # load word at memory address in A (+ offset) into C
         self.write_reg(
-                       self.OPERANDS['First'],
+                       self.OPERANDS['F'],
                        self.read_memory(
                                         self.read_reg(self.OPERANDS['A']),
-                                        self.OPERANDS['Offset']
+                                        self.OPERANDS['O']
                                        )
                       )
         self.advance()
 
     def STR(self):
-        # store word in First into memory address at A (+ offset)
+        # store word in C into memory address at A (+ offset)
         self.write_memory(
                           self.read_reg(self.OPERANDS['A']),
-                          self.read_reg(self.OPERANDS['First']),
-                          self.OPERANDS['Offset']
+                          self.read_reg(self.OPERANDS['F']),
+                          self.OPERANDS['O']
                          )
         self.advance()
