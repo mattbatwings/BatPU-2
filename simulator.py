@@ -16,7 +16,7 @@ OPS     = {
            'I'         : [0,  8, 1, "immediate"],      # Immediate
            'C'         : [10, 2, 0, "condition"],      # Condition
            'O'         : [0,  4, 1, "offset"],         # Offset
-           'o'        : [12, 4, 0, "opcode"],         # Opcode
+           'o'         : [12, 4, 0, "opcode"],         # Opcode
            'M'         : [0, 10, 0, "memory address"], # Memory address
           }
 
@@ -280,9 +280,9 @@ class batpu_v2:
         self.advance()
 
     def LDI(self):
-        # puts Immediate into C
+        # puts Immediate into A
         self.write_reg(
-                       self.OPERANDS['F'],
+                       self.OPERANDS['A'],
                        self.OPERANDS['I']
                       )
         self.advance()
@@ -329,7 +329,7 @@ class batpu_v2:
     def LOD(self):
         # load word at memory address in A (+ offset) into C
         self.write_reg(
-                       self.OPERANDS['F'],
+                       self.OPERANDS['B'],
                        self.read_memory(
                                         self.read_reg(self.OPERANDS['A']),
                                         self.OPERANDS['O']
@@ -341,7 +341,7 @@ class batpu_v2:
         # store word in C into memory address at A (+ offset)
         self.write_memory(
                           self.read_reg(self.OPERANDS['A']),
-                          self.read_reg(self.OPERANDS['F']),
+                          self.read_reg(self.OPERANDS['B']),
                           self.OPERANDS['O']
                          )
         self.advance()
