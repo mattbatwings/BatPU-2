@@ -70,21 +70,17 @@ def assemble(assembly_filename, output_filename):
         
         # Pseudo-instructions
         if words[0] == 'cmp':
-            words = ['sub', registers[0], words[1], words[2]] # sub r0 A B
+            words = ['sub', words[1], words[2], registers[0]] # sub A B r0
         elif words[0] == 'mov':
-            words = ['add', words[1], words[2], registers[0]] # add dest A r0
+            words = ['add', words[1], registers[0], words[2], ] # add A r0 dest
         elif words[0] == 'lsh':
-            words = ['add', words[1], words[2], words[2]] # add dest A A
+            words = ['add', words[1], words[2], words[2]] # add A A dest
         elif words[0] == 'inc':
             words = ['adi', words[1], '1'] # adi dest 1
         elif words[0] == 'dec':
             words = ['adi', words[1], '-1'] # adi dest -1
         elif words[0] == 'not':
-            words = ['nor', words[1], words[2], registers[0]] # nor dest A r0
-        elif words[0] == 'lod' and len(words) == 3:
-            words = ['lod', words[1], words[2], '0'] # lod dest A 0
-        elif words[0] == 'str' and len(words) == 3:
-            words = ['str', words[1], words[2], '0'] # str source A 0
+            words = ['nor', words[1], registers[0], words[2]] # nor A r0 dest
         
         # Begin machine code translation
         opcode = words[0]
@@ -104,22 +100,22 @@ def assemble(assembly_filename, output_filename):
         if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'lod', 'str'] and len(words) != 4:
             exit(f'Incorrect number of operands for {opcode} on line {i}')
 
-        # First register
+        # Reg A
         if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'rsh', 'ldi', 'adi', 'lod', 'str']:
             if words[1] != (words[1] % (2 ** 4)):
-                exit(f'Invalid first register for {opcode} on line {i}')
+                exit(f'Invalid reg A for {opcode} on line {i}')
             machine_code |= (words[1] << 8)
 
-        # Reg A
-        if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'rsh', 'lod', 'str']:
+        # Reg B
+        if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'lod', 'str']:
             if words[2] != (words[2] % (2 ** 4)):
-                exit(f'Invalid reg A for {opcode} on line {i}')
+                exit(f'Invalid reg B for {opcode} on line {i}')
             machine_code |= (words[2] << 4)
 
-        # Reg B
-        if opcode in ['add', 'sub', 'nor', 'and', 'xor']:
+        # Reg Dest
+        if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'rsh']:
             if words[3] != (words[3] % (2 ** 4)):
-                exit(f'Invalid reg B for {opcode} on line {i}')
+                exit(f'Invalid reg Dest for {opcode} on line {i}')
             machine_code |= words[3]
 
         # Immediate
