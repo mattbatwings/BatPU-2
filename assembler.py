@@ -112,10 +112,10 @@ def assemble(assembly_filename, output_filename):
                 exit(f'Invalid reg B for {opcode} on line {i}')
             machine_code |= (words[2] << 4)
 
-        # Reg Dest
+        # Reg C
         if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'rsh']:
             if words[3] != (words[3] % (2 ** 4)):
-                exit(f'Invalid reg Dest for {opcode} on line {i}')
+                exit(f'Invalid reg C for {opcode} on line {i}')
             machine_code |= words[3]
 
         # Immediate
