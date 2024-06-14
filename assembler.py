@@ -74,7 +74,7 @@ def assemble(assembly_filename, output_filename):
         elif words[0] == 'mov':
             words = ['add', words[1], registers[0], words[2], ] # add A r0 dest
         elif words[0] == 'lsh':
-            words = ['add', words[1], words[2], words[2]] # add A A dest
+            words = ['add', words[1], words[1], words[2]] # add A A dest
         elif words[0] == 'inc':
             words = ['adi', words[1], '1'] # adi dest 1
         elif words[0] == 'dec':
