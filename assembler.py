@@ -35,6 +35,11 @@ def assemble(assembly_filename, output_filename):
              'write_char', 'buffer_chars', 'clear_chars_buffer', 'show_number', 'clear_number', 'signed_mode', 'unsigned_mode', 'rng', 'controller_input']
     for index, symbol in enumerate(ports):
         symbols[symbol] = index + 240
+
+    for i in range(256):
+        symbols[f'"{chr(i)}"'] = i
+
+    symbols['"space"'] = 32
     
     # Add definitions to symbol table
     # expects all definitions to be above assembly
@@ -59,6 +64,7 @@ def assemble(assembly_filename, output_filename):
             return int(word)
         if symbols.get(word) is None:
             exit(f'Could not resolve {word}')
+
         return symbols[word]
 
     for i in range(offset, len(lines)):
