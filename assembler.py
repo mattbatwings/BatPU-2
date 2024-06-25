@@ -53,7 +53,7 @@ def assemble(assembly_filename, output_filename):
     for index, line in enumerate(lines):
         words = [word.lower() for word in line.split()]
         if is_definition(words[0]):
-            symbols[words[1]] = int(words[2])
+            symbols[words[1]] = eval(words[2])
             offset += 1
         elif is_label(words[0]):
             symbols[words[0]] = index - offset
