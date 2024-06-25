@@ -57,6 +57,7 @@ def assemble(assembly_filename, output_filename):
             offset += 1
         elif is_label(words[0]):
             symbols[words[0]] = index - offset
+            offset += len(words) < 2
     
     # Generate machine code
     def resolve(word):
