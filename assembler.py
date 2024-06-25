@@ -73,6 +73,10 @@ def assemble(assembly_filename, output_filename):
         # Remove label, we have it in symbols now
         if is_label(words[0]):
             words = words[1:]
+            
+        # Catch the error from empty line after label
+        if words == []:
+            continue
         
         # Pseudo-instructions
         if words[0] == 'cmp':
