@@ -50,14 +50,15 @@ def assemble(assembly_filename, output_filename):
         return word[0] == '.'
     
     offset = 0
+    offset_label = 0
     for index, line in enumerate(lines):
         words = [word.lower() for word in line.split()]
         if is_definition(words[0]):
             symbols[words[1]] = int(eval(words[2]))
             offset += 1
         elif is_label(words[0]):
-            symbols[words[0]] = index - offset
-            offset += len(words) < 2
+            symbols[words[0]] = index - offset - offset_label
+            offset_label += len(words) < 2
     
     # Generate machine code
     def resolve(word):
