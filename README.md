@@ -229,7 +229,7 @@ Like instructions, operands may be separated by commas or space characters.
 
 Specially for DB directives, the operand may be a multi-char string constant as well as everything an instruction operand can be.
 
-`DB "Hello, World!", 0x10, 0x00`
+`DB "Hello, World!", 0x0A, 0x00`
 
 The backslash may be used to insert characters that would be normally detected as a string constant/character literal termination.
 
@@ -247,7 +247,7 @@ Examples:
 
 `DB "ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"`
 
-`DB "The quick brown fox jumps over the " "lazy dog." 0x10 0`
+`DB "The quick brown fox jumps over the " "lazy dog." 0x0A 0`
 
 `db "H" "e" "l" 'l' "o" ' ' ":" "3"`
 
