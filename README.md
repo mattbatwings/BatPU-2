@@ -315,7 +315,7 @@ If you need to set the position to 0x8000 to perhaps store some information you 
 `ORG $8000` or `ORG 0x8000`
 then use DB directives to store that information.
 ```
-DB "Hello, World!", 0x10, 0x00 ; some data
+DB "Hello, World!", 0x0A, 0x00 ; some data
 ```
 or if your machine starts at position 0x8000, you write your code after the ORG directive setting it to position 0x8000:
 ```
