@@ -38,7 +38,7 @@ Example:
 
 `-f --output-format <format>`
   Set the output format, possible [formats](#formats) are: (default is Matt)
-   [Matt](#format-matt), [Raw](#format-raw), [Image](#format-image), [Hexdump](#format-hexdump), [Logisim3](#format-logisim3), [DEBUG](#format-debug). (case-insensitive)
+   [Matt](#format-matt), [Raw](#format-raw), [Image](#format-image), [Hexdump](#format-hexdump), [Logisim3](#format-logisim3), [Logisim2](#format-logisim2), [DEBUG](#format-debug). (case-insensitive)
   Example:
    `-f raw`
    will set output format to 'raw'

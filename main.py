@@ -15,7 +15,7 @@ Options:
                             with '0x' and '0b' respectively.
   -f --output-format <format>
                             Set the output format, possible formats are: (default is Matt)
-                            Matt, Raw, Image, Hexdump, Logisim3, DEBUG.
+                            Matt, Raw, Image, Hexdump, Logisim3, Logisim2, DEBUG.
                             (case-insensitive)
      --dump-labels          Dump labels after assembly.
      --dump-definitions     Dump definitions after assembly.
