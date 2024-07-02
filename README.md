@@ -13,22 +13,17 @@ Run main.py with python (in a <u>command-line/terminal!!!)</u> and pass the opti
 Example:
 
 `python main.py -vv -s1KiB -fMatt -Ooutput.txt test.s`
-
- Verbosity: 2
-
- ROM size: 1 Kibi-words
-
- Output format: Matt
-
- Output: output.txt
-
- Input file: test.s
+- Verbosity: 2
+- ROM size: 1 Kibi-words
+- Output format: Matt
+- Output: output.txt
+- Input file: test.s
 
 ## Options
 > Note: Single character options can be used without separating the parameter.
 > '-s1k' is as valid as '-s 1k'
 
-`-O --output <file>`
+### `-O --output <file>`
 
   Sets output filename.
 
@@ -38,7 +33,7 @@ Example:
 
    will output to 'output.bin'
 
-`-s --rom-size <size>`
+### `-s --rom-size <size>`
 
   Set ROM size in [words](#word). May be followed by suffixes for KiB, MiB, GiB, TiB, PiB, EiB, ZiB, YiB. (the 'iB' is optional. case-insensitive)
 
@@ -52,7 +47,7 @@ Example:
 
    will set ROM size to 64 words.
 
-`-p --padding-word <word>`
+### `-p --padding-word <word>`
 
   Set what the padding [word](#word) should be, defaults to all 0s. hexadecimal or binary inputs should be prefixed with '0x' and '0b' respectively.
   
@@ -63,7 +58,7 @@ Example:
    will set padding word to 16/0x10/0b00010000/0o020
 
 
-`-f --output-format <format>`
+### `-f --output-format <format>`
 
   Set the output format, possible [formats](#formats) are: (default is Matt)
 
@@ -76,15 +71,15 @@ Example:
    will set output format to 'raw'
 
 
-`   --dump-labels`
+### `--dump-labels`
 
   Dumps label table after assembly.
 
-`   --dump-definitions`
+### `--dump-definitions`
 
   Dumps definition table after assembly.
 
-`-v`
+### `-v`
 
   Verbose output. (more v's means higher verbosity. above level 4 there is no effect)
 
@@ -103,11 +98,11 @@ Example:
    `-vvvv`
    verbosity is 4, +displays all assembly lines after each process, and current saved definitions & labels if changed.
 
-`-h --help`
+### `-h --help`
 
   Prints a shorter version of this.
 
-`-V --version`
+### `-V --version`
 
   Prints version and credits.
 
