@@ -247,7 +247,7 @@ Examples:
 
 `DB "ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789"`
 
-`DB "The quick brown fox jumped over the " "lazy dog." 0x10 0`
+`DB "The quick brown fox jumps over the " "lazy dog." 0x10 0`
 
 `db "H" "e" "l" 'l' "o" ' ' ":" "3"`
 
@@ -359,4 +359,3 @@ with squeezing would be reduced to
 ```
 
 The same information is conveyed but in a more compact manner, though extra code will be needed to interpret it. (Logisim-evolution as of v3.8.0 can't)
-
