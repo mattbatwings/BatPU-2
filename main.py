@@ -17,6 +17,9 @@ Options:
                             Set the output format, possible formats are: (default is Matt)
                             Matt, Raw, Image, Hexdump, Logisim3, Logisim2, DEBUG.
                             (case-insensitive)
+  -M --matt-mode            Enables Matt mode, which disables DB & ORG directives, and-
+                            multi-line pseudo-instructions, which Matt's assembler does-
+                            not support.
      --dump-labels          Dump labels after assembly.
      --dump-definitions     Dump definitions after assembly.
   -v                        Verbose output. (more v's means higher-
@@ -29,11 +32,11 @@ Notes:
 
 # Credits/license message (TODO: Add license from original once it's licensed)
 credits_mess = """Credits:
-  Original code & ISA author is @MattBatWings at
+  Author of the base code (none of which remains now) & ISA author is @MattBatWings at
    GitHub: https://github.com/MattBatWings
    YouTube: https://youtube.com/@MattBatWings
 
-  Modifications to Matt's code by @ProtoSebastian at
+  Code author is @ProtoSebastian at
    GitHub: https://github.com/ProtoSebastian"""
 
 def print_version():
@@ -100,6 +103,8 @@ def main():
     verbosity   = 0
     input_files = 0
 
+    matt_mode = False
+
     idx=1
     while(idx < len(sys.argv)):
         # Handle options
@@ -136,6 +141,10 @@ def main():
                 case '--output-format':
                     idx += 1
                     format_style = sys.argv[idx]
+                # Matt mode
+                case '--matt-mode':
+                    idx += 1
+                    matt_mode = True
                 # Unknown
                 case other:
                     handle_unknown_switch(term)
@@ -183,6 +192,9 @@ def main():
                         idx += 1
                         PARAM = sys.argv[idx]
                     format_style = PARAM
+                # Matt mode
+                case '-M':
+                    matt_mode = True
                 # Verbosity
                 case '-v':
                     PARAM = sys.argv[idx][1:]
@@ -208,7 +220,7 @@ def main():
         fatal_error('main', "No ROM size specified, cannot continue.\nPlease specify a ROM size.")
     if(verbosity >= 1):
         print("main: Padding word is \'0x%04X\'"%padding_word)
-    machine_code_output = assemble(input_file, ROM_size, verbosity - 1, debug_flags)
+    machine_code_output = assemble(input_file, ROM_size, verbosity - 1, debug_flags, matt_mode)
     formatter(machine_code_output, output_file, ROM_size, padding_word, format_style, verbosity)
 
     # Success message

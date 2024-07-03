@@ -70,6 +70,9 @@ Example:
 
    will set output format to 'raw'
 
+### `-M --matt-mode`
+
+  Enables Matt mode, which disables ORG directives, DB directives, and multi-line pseudo-instructions, because Matt's assembler doesn't support them.
 
 ### `--dump-labels`
 

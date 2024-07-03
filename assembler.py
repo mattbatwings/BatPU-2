@@ -1,4 +1,3 @@
-# All rights to this code go to the original owner, @MattBatWings
 from common import *
 
 ###- CONSTANTS -###
@@ -169,27 +168,27 @@ STARTING_SYMBOLS = {
 
 ###- UTILITY -###
 # Define check
-def is_define(word):
+def is_define(word: str):
     if(len(word) == 0):
         return 0
     return word == 'define'
 # Label check
-def is_label(word):
+def is_label(word: str):
     if(len(word) == 0):
         return 0
     return (word[0] == '.') | ((word[-1] == ':') << 1)
 # Definition check
-def is_definition(word, symbols):
+def is_definition(word: str, symbols: dict):
     if(len(word) == 0):
         return 0
     return word in symbols
 # Pseudo-instruction check
-def is_pseudo(word):
+def is_pseudo(word: str):
     if(len(word) == 0):
         return 0
     return word in PSEUDO_INSTRUCTIONS
 # Turn label as it appears in code into how it'll be used in instructions ('Done:' -> '.Done')
-def to_label(word, filename, line, caller):
+def to_label(word: str, filename: str, line: int, caller: str):
     if(len(word) == 0):
         return 0
     result = is_label(word)
@@ -203,7 +202,7 @@ def to_label(word, filename, line, caller):
     else:
         fatal_error('assembler', f"{caller}: {filename}:{line}: Could not interpret label \'{word}\'")
 # Convert label from many syntaxes into 1 syntax
-def convert_label(word):
+def convert_label(word: str):
     result = is_label(word)
     if(result != 0):
         if(result == 1):
@@ -216,7 +215,7 @@ def convert_label(word):
         fatal_error('assembler debug', f"convert_label: Could not interpret label \'{word}\'")
 # Resolve symbols
 # symbols = [symbols, labels, definitions]
-def resolve(word, filename, line, symbols, caller):
+def resolve(word: any, filename: str, line: int, symbols: dict, caller: str):
     # Return unmodified if is an int
     if(type(word) == int):
         return word
@@ -242,7 +241,7 @@ def resolve(word, filename, line, symbols, caller):
         print(dump_dict(symbols[0]))
         fatal_error('assembler', f"{caller}: {filename}:{line}: Could not resolve symbol \'{word}\'\n{_ERR}")
 # Resolve integers, ignores everything else
-def resolve_integer(word, filename, line, caller):
+def resolve_integer(word: any, filename: str, line: int, caller: str):
     # Return unmodified if is an int, or empty
     if((type(word) == int) or (len(word) == 0)):
         return word
@@ -271,7 +270,7 @@ def resolve_integer(word, filename, line, caller):
     # Return unmodified if not an integer
     return word
 # Handle character constant
-def char_constant(string, idx, filename, line, caller, resolve_strings=True):
+def char_constant(string: str, idx: int, filename: str, line: int, caller: str, resolve_strings: bool = True):
     idx_end=strfind_escape(string, '\'', idx + 1)
     if(idx_end==-1):
         fatal_error('assembler', f"{caller}: {filename}:{line}:{idx + 1}: Missing terminating \' character.\n{string}\n{' ' * idx}^{'~' * (len(string) - idx - 1)}")
@@ -288,7 +287,7 @@ def char_constant(string, idx, filename, line, caller, resolve_strings=True):
         fatal_error('assembler', f"{caller}: {filename}:{line}:{idx + 1}: Empty character constant.\n{string}\n{' ' * idx}^~")
     return (idx, idx_end, [ord(evaluated) & ((1 << WORD_LENGTH) - 1)])
 # Handle string constant
-def string_constant(string, idx, filename, line, caller, resolve_strings=True):
+def string_constant(string: str, idx: int, filename: str, line: int, caller: str, resolve_strings: bool = True):
     idx_end=strfind_escape(string, '\"', idx + 1)
     if(idx_end==-1):
         fatal_error('assembler', f"{caller}: {filename}:{line}:{idx + 1}: Missing terminating \" character.\n{string}\n{' ' * idx}^{'~' * (len(string) - idx - 1)}")
@@ -303,7 +302,7 @@ def string_constant(string, idx, filename, line, caller, resolve_strings=True):
         fatal_error('assembler', f"{caller}: {filename}:{line}:{idx + 1}: Empty string constant.\n{string}\n{' ' * idx}^~")
     return (idx, idx_end, [(ord(char) & ((1 << WORD_LENGTH) - 1)) for char in evaluated])
 # Decompose instruction + character constants
-def decompose_instruction(string, filename, line, caller, resolve_strings=True):
+def decompose_instruction(string: str, filename: str, line: int, caller: str, resolve_strings: bool = True):
     idx=0
     output=[]
     while(idx<len(string)):
@@ -329,7 +328,7 @@ def decompose_instruction(string, filename, line, caller, resolve_strings=True):
         return [resolve_integer(x, filename, line, caller) for x in output]
     return output
 # Decompose instruction + character constants + strings
-def decompose_instruction_multi(string, filename, line, caller, resolve_strings=True):
+def decompose_instruction_multi(string: str, filename: str, line: int, caller: str, resolve_strings: bool = True):
     idx=0
     output=[]
     while(idx<len(string)):
@@ -353,7 +352,7 @@ def decompose_instruction_multi(string, filename, line, caller, resolve_strings=
         return [resolve_integer(x, filename, line, caller) for x in output]
     return output
 # Parse line
-def parse_line(line, filename, caller, resolve_strings=True):
+def parse_line(line: list, filename: str, caller: str, resolve_strings: bool = True):
     decomposed_lines = []
     decomposed_definitions = []
     split_A = 0
@@ -392,13 +391,13 @@ def parse_line(line, filename, caller, resolve_strings=True):
         decomposed_lines.append([[instruction] + decompose_instruction(parameters, filename, line[1], caller, resolve_strings), line[1]])
     return decomposed_lines, decomposed_definitions
 # Recompose line
-def recompose_line(line):
+def recompose_line(line: list):
     instruction = line[0][0]
     if(is_label(instruction)):
         return convert_label(instruction)
     return instruction.upper() + ' ' + ', '.join(str(x) for x in line[0][1:])
 # Display multiple lines of Assembly
-def print_assembly(lines, last_was, line_width):
+def print_assembly(lines: list, last_was: list, line_width: int):
     last_line = 0
     special_case = False
     for line in lines:
@@ -419,7 +418,7 @@ def print_assembly(lines, last_was, line_width):
         last_line = line[1]
         print()
 # Display multiple lines of Assembly with machine code positions
-def print_assembly_wordpos(lines, last_was, line_width, hex_width):
+def print_assembly_wordpos(lines: list, last_was: list, line_width: int, hex_width: int):
     last_line = 0
     special_case = False
     for line in lines:
@@ -442,7 +441,7 @@ def print_assembly_wordpos(lines, last_was, line_width, hex_width):
         last_line = line[1]
         print()
 # Strip line of comments
-def remove_comment(comment_symbols, line):
+def remove_comment(comment_symbols: str, line: str):
     index=strfind(line, comment_symbols)
     if(index==-1):
         return line
@@ -450,21 +449,23 @@ def remove_comment(comment_symbols, line):
 
 ###- MAIN THING -###
 # Assemble function
-def assemble(assembly_filename, ROM_size, verbose_level, debug_flags):
+def assemble(assembly_filename: str, ROM_size: int, verbose_level: int, debug_flags: int, matt_mode: bool):
     try:
         assembly_file = open(assembly_filename, 'r')
     except FileNotFoundError as _ERR:
         fatal_error('assembler', f"{assembly_filename}: File not found.\n{_ERR}")
     if(verbose_level >= 0):
         print(f"assembler: Reading from \'{assembly_filename}\'")
+        if(matt_mode):
+            # Matt mode engaged.
+            print(f"assembler: Matt mode active. ORG, DB, & multi-line pseudo-instructions are disabled.")
     lines = [line.strip() for line in assembly_file]
 
     # DEBUG: ROM address size constant
     ROM_address_size = int(log2(ROM_size) + 3) >> 2
-    if(verbose_level >= 2):
-        print("Address hex width: %d (%s)"%(ROM_address_size, ''.join(hex(x%16).upper()[2] for x in range(ROM_address_size))))
     line_address_size = int(log(len(lines), 10) + 1)
     if(verbose_level >= 2):
+        print("Address hex width: %d (%s)"%(ROM_address_size, ''.join(hex(x%16).upper()[2] for x in range(ROM_address_size))))
         print("Line address width: %d (%s)"%(line_address_size, ''.join(chr(0x30 + (x%10)) for x in range(line_address_size))))
 
     # Remove comments and blanklines, and add line number
@@ -481,8 +482,13 @@ def assemble(assembly_filename, ROM_size, verbose_level, debug_flags):
     labels = {}
 
     # Calculate number of operands and add to macro element
-    for pop in PSEUDO_INSTRUCTIONS:
+    pop_keys = [pop for pop in PSEUDO_INSTRUCTIONS]
+    for pop in pop_keys:
         popinfo=PSEUDO_INSTRUCTIONS[pop]
+        # Remove pseudo instructions with more than 1 line of resolution if in Matt mode
+        if((len(popinfo[0].split('\n')) > 1) and matt_mode):
+            PSEUDO_INSTRUCTIONS.pop(pop)
+            continue
         # sketch sketch
         words=[]
         for line in popinfo[0].split('\n'):
@@ -696,6 +702,9 @@ def assemble(assembly_filename, ROM_size, verbose_level, debug_flags):
 
         # Handle ORG directive
         if(words[0] == 'org'):
+            # Error on ORG directive if in Matt mode
+            if(matt_mode):
+                fatal_error('assembler', f"position resolver: {assembly_filename}:{line_number}: Encountered ORG directive, but they are disabled in Matt mode.")
             if(len(words) == 1):
                 fatal_error('assembler', f"position resolver: {assembly_filename}:{line_number}: No parameters given for ORG directive.")
             elif(len(words) > 2):
@@ -725,6 +734,9 @@ def assemble(assembly_filename, ROM_size, verbose_level, debug_flags):
                 print("%s: \'%s\' is a known instruction, and is %d words.\n%s: Incrementing position by %d words."%(spacing, words[0], OPCODES[words[0]][3], spacing, OPCODES[words[0]][3]))
         # Handle DB directive
         elif(words[0] == 'db'):
+            # Error on DB directive if in Matt mode
+            if(matt_mode):
+                fatal_error('assembler', f"position resolver: {assembly_filename}:{line_number}: Encountered DB directive, but they are disabled in Matt mode.")
             if(len(words) == 1):
                 fatal_error('assembler', f"position resolver: {assembly_filename}:{line_number}: No parameters given for DB directive.")
             position += len(words) - 1
@@ -791,6 +803,9 @@ def assemble(assembly_filename, ROM_size, verbose_level, debug_flags):
     # Lines should be clean by now
 
     # Start assembling
+    # DEBUG: show current action
+    if(verbose_level >= 1):
+        print("\nSTARTING ASSEMBLY..")
     output_machine_code = []
     last_line = -1
     for i in range(len(decomposed)):
