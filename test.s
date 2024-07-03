@@ -20,5 +20,6 @@ ORG 0x00
   JMP .loop
 done:               ; different format label test
   str r0 r1         ; store result in memory at index 0 (no optional offset operand)
+.notUsed1:          ; another alternate label
 .notUsed2 .notUsed3  hlt
 	            ; halt ; many inline labels test
