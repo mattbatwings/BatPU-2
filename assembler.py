@@ -917,7 +917,8 @@ def formatter(assembler_output, output_file, rom_size, padding_word, format_styl
     ## Output is as big as it needs to be
     ## Empty space is filled with provided padding_word
     if(format_style == 'matt'):
-        print(" Matt\'s format.")
+        if(verbose_level >= 1):
+            print(" Matt\'s format.")
         head = 0
         for instruction in assembler_output:
             position = instruction[2]

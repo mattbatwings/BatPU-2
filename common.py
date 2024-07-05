@@ -2,7 +2,7 @@ from math import log2, log
 from math import inf as INFINITY
 
 # MAJOR, MINOR, PATCH, PRE-RELEASE IDENTIFIER, BUILD (https://semver.org)
-VERSION = ['4','0','0','BETA','']
+VERSION = ['4','0','1','BETA','']
 # display like "MAJOR.MINOR.PATCH[-PRE-RELEASE IDENT][+BUILD]", [] = omitted if empty
 VER_FMT = "{0}.{1}.{2}[-{3}][+{4}]"
 # Size prefixes
