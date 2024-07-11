@@ -122,7 +122,7 @@ def assemble(assembly_filename, output_filename):
         if opcode in ['add', 'sub', 'nor', 'and', 'xor', 'rsh']:
             if words[-1] != (words[-1] % (2 ** 4)):
                 exit(f'Invalid reg C for {opcode} on line {i}')
-            machine_code |= words[3]
+            machine_code |= words[-1]
 
         # Immediate
         if opcode in ['ldi', 'adi']:
