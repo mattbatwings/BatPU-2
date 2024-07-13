@@ -41,9 +41,6 @@ def assemble(assembly_filename, output_filename):
         symbols[f'"{chr(i)}"'] = i
         symbols[f"'{chr(i)}'"] = i
 
-    symbols['"space"'] = 32
-    symbols["'space'"] = 32
-
     # Extract definitions and labels
     def is_definition(word):
         return word == 'define'
@@ -98,7 +95,7 @@ def assemble(assembly_filename, output_filename):
         # space special case
         if words[-1] in ['"', "'"] and words[-2] in ['"', "'"]:
             words = words[:-1]
-            words[-1] = "'space'"
+            words[-1] = "' '"
         
         # Begin translation
         opcode = words[0]
