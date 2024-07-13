@@ -94,6 +94,11 @@ def assemble(assembly_filename, output_filename):
         # lod/str optional offset
         if words[0] in ['lod', 'str'] and len(words) == 3:
             words.append('0')
+
+        # space special case
+        if words[-1] in ['"', "'"] and words[-2] in ['"', "'"]:
+            words = words[:-1]
+            words[-1] = "'space'"
         
         # Begin translation
         opcode = words[0]
