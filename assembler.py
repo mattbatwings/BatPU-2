@@ -4,25 +4,26 @@ def assemble(assembly_filename, output_filename):
     lines = (line.strip() for line in assembly_file)
 
     # Remove comments and blanklines
-    lines = [line.split('/')[0] for line in lines]
+    for comment_symbol in ['/', ';', '#']:
+        lines = [line.split(comment_symbol)[0] for line in lines]
     lines = [line for line in lines if line.strip()]
-    
+
     # Populate symbol table
     symbols = {}
+    
+    opcodes = ['nop', 'hlt', 'add', 'sub', 'nor', 'and', 'xor', 'rsh', 'ldi', 'adi', 'jmp', 'brh', 'cal', 'ret', 'lod', 'str']
+    for index, symbol in enumerate(opcodes):
+        symbols[symbol] = index
     
     registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15']
     for index, symbol in enumerate(registers):
         symbols[symbol] = index
 
-    opcodes = ['nop', 'hlt', 'add', 'sub', 'nor', 'and', 'xor', 'rsh', 'ldi', 'adi', 'jmp', 'brh', 'cal', 'ret', 'lod', 'str']
-    for index, symbol in enumerate(opcodes):
-        symbols[symbol] = index
-
-    conditions = ['eq', 'ne', 'ge', 'lt']
+    conditions1 = ['eq', 'ne', 'ge', 'lt']
     conditions2 = ['=', '!=', '>=', '<']
     conditions3 = ['z', 'nz', 'c', 'nc']
     conditions4 = ['zero', 'notzero', 'carry', 'notcarry']
-    for index, symbol in enumerate(conditions):
+    for index, symbol in enumerate(conditions1):
         symbols[symbol] = index
     for index, symbol in enumerate(conditions2):
         symbols[symbol] = index
@@ -38,49 +39,51 @@ def assemble(assembly_filename, output_filename):
 
     for i in range(256):
         symbols[f'"{chr(i)}"'] = i
+        symbols[f"'{chr(i)}'"] = i
 
     symbols['"space"'] = 32
-    
-    # Add definitions to symbol table
-    # expects all definitions to be above assembly
+    symbols["'space'"] = 32
+
+    # Extract definitions and labels
     def is_definition(word):
         return word == 'define'
     
     def is_label(word):
         return word[0] == '.'
     
-    offset = 0
+    pc = 0
+    instructions = []
+
     for index, line in enumerate(lines):
         words = [word.lower() for word in line.split()]
+
         if is_definition(words[0]):
             symbols[words[1]] = int(words[2])
-            offset += 1
         elif is_label(words[0]):
-            symbols[words[0]] = index - offset
-    
+            symbols[words[0]] = pc
+            if len(words) > 1:
+                pc += 1
+                instructions.append(words[1:])
+        else:
+            pc += 1
+            instructions.append(words)
+
     # Generate machine code
     def resolve(word):
         if word[0] in '-0123456789':
             return int(word)
         if symbols.get(word) is None:
             exit(f'Could not resolve {word}')
-
         return symbols[word]
 
-    for i in range(offset, len(lines)):
-        words = [word.lower() for word in lines[i].split()]
-
-        # Remove label, we have it in symbols now
-        if is_label(words[0]):
-            words = words[1:]
-        
-        # Pseudo-instructions
+    for pc, words in enumerate(instructions):
+        # Resolve pseudo-instructions
         if words[0] == 'cmp':
             words = ['sub', words[1], words[2], registers[0]] # sub A B r0
         elif words[0] == 'mov':
             words = ['add', words[1], registers[0], words[2], ] # add A r0 dest
         elif words[0] == 'lsh':
-            words = ['add', words[1], words[2], words[2]] # add A A dest
+            words = ['add', words[1], words[1], words[2]] # add A A dest
         elif words[0] == 'inc':
             words = ['adi', words[1], '1'] # adi dest 1
         elif words[0] == 'dec':
@@ -88,11 +91,11 @@ def assemble(assembly_filename, output_filename):
         elif words[0] == 'not':
             words = ['nor', words[1], registers[0], words[2]] # nor A r0 dest
 
-        # lod/str expansion when no offset
+        # lod/str optional offset
         if words[0] in ['lod', 'str'] and len(words) == 3:
             words.append('0')
         
-        # Begin machine code translation
+        # Begin translation
         opcode = words[0]
         machine_code = symbols[opcode] << 12
         words = [resolve(word) for word in words]
@@ -154,3 +157,6 @@ def assemble(assembly_filename, output_filename):
 
         as_string = bin(machine_code)[2:].rjust(16, '0')
         machine_code_file.write(f'{as_string}\n')
+
+if __name__ == '__main__':
+    assemble('test.as', 'test.mc')
