@@ -153,7 +153,7 @@ def assemble(assembly_filename, output_filename):
 
         # Offset
         if opcode in ['lod', 'str']:
-            if words[3] < -8 or words[3] > 7: # 2s comp [-7, 8]
+            if words[3] < -8 or words[3] > 7: # 2s comp [-8, 7]
                 exit(f'Invalid offset for {opcode} on line {pc}')
             machine_code |= words[3] & (2 ** 4 - 1)
 
