@@ -68,7 +68,7 @@ def assemble(assembly_filename, output_filename):
     # Generate machine code
     def resolve(word):
         if word[0] in '-0123456789':
-            return int(word)
+            return int(word, 0)
         if symbols.get(word) is None:
             exit(f'Could not resolve {word}')
         return symbols[word]
