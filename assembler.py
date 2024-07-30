@@ -51,6 +51,14 @@ def assemble(assembly_filename, output_filename):
     pc = 0
     instructions = []
 
+    # Generate machine code
+    def resolve(word):
+        if word[0] in '-0123456789':
+            return int(word, 0)
+        if symbols.get(word) is None:
+            exit(f'Could not resolve {word}')
+        return symbols[word]
+
     should_exit = 0
     exit_mess = ""
     for index, line in enumerate(lines):
@@ -62,7 +70,7 @@ def assemble(assembly_filename, output_filename):
                 exit_mess += f'Duplicate definition \'{words[1]}\' at line {index} before instruction {"%04d"%pc}!!\n'
                 # Instruction index is included because Ado's VM shows only the instruction indices
                 should_exit |= 2 # Signal dup. definitions
-            symbols[words[1]] = int(words[2], 0) # Support for any number fmt. as long as it has its base identifier
+            symbols[words[1]] = resolve(words[2]) # Support for any number fmt. as long as it has its base identifier
         elif is_label(words[0]):
             if(words[0] in symbols):
                 # Accumulate all duplicate labels as the error message
@@ -80,14 +88,6 @@ def assemble(assembly_filename, output_filename):
     if(should_exit > 0):
         exit_mess += ("Error: Duplicate labels.\n" * ((should_exit & 1) != 0)) + ("Error: Duplicate definitions.\n" * ((should_exit & 2) != 0))
         exit(exit_mess)
-            
-    # Generate machine code
-    def resolve(word):
-        if word[0] in '-0123456789':
-            return int(word, 0)
-        if symbols.get(word) is None:
-            exit(f'Could not resolve {word}')
-        return symbols[word]
 
     for pc, words in enumerate(instructions):
         # Resolve pseudo-instructions
