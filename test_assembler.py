@@ -1,26 +1,24 @@
 import unittest
-from assembler import assemble
+from typing import List
+
+from assembler import Assembler
+from linker import link
+from parse import Parser
+from tokens import Tokenizer
+
+with open("std.as", "r") as f:
+    STD = [line.strip() for line in f.readlines()]
+
 
 class AssemblerTestCase(unittest.TestCase):
-    
-    def write_assembly_file(self, filename, lines):
-        with open(filename, 'w') as f:
-            f.write('\n'.join(lines))
-
-    def read_machine_code_file(self, filename):
-        with open(filename, 'r') as f:
-            return f.read().splitlines()
-
-    def run_test_case(self, assembly_lines, expected_machine_code, description):
-        assembly_filename = 'test.as'
-        output_filename = 'output.mc'
-        
-        self.write_assembly_file(assembly_filename, assembly_lines)
-        assemble(assembly_filename, output_filename)
-        
-        actual_machine_code = self.read_machine_code_file(output_filename)
-        
-        self.assertEqual(actual_machine_code, expected_machine_code, f"{description}\nExpected: {expected_machine_code}\nGot: {actual_machine_code}")
+    def run_test_case(self, assembly_lines: List[str], expected_machine_code: List[str], description: str):
+        code = STD + assembly_lines
+        code = "\n".join(code)
+        tokens = Tokenizer(code).tokenize()
+        ast = Parser(tokens).parse()
+        compiled = Assembler().visit_program(ast)
+        byte_code = link(compiled).split("\n")
+        self.assertEqual(byte_code, expected_machine_code, f"{description}\nExpected: {expected_machine_code}\nGot: {byte_code}")
 
     def test_nop_instruction(self):
         self.run_test_case(
@@ -150,7 +148,7 @@ class AssemblerTestCase(unittest.TestCase):
 
     def test_cmp_instruction(self):
         self.run_test_case(
-            ["cmp nz r2"], 
+            ["cmp r1 r2"],
             ["0011000100100000"], 
             "Pseudo-instruction CMP"
         )
@@ -211,12 +209,12 @@ class AssemblerTestCase(unittest.TestCase):
             [
                 "define A 1", 
                 "define B 2", 
-                "define C 3", 
+                "define C_ 3",  # conflicts with carry of std
                 "nop", 
                 "hlt", 
                 "ldi r1 A", 
                 ".jmp ldi r2 B", 
-                "ldi r3 C", 
+                "ldi r3 C_",
                 "add r2 r3 r5", 
                 "sub r5 r1 r4", 
                 ".brh nor r1 r0 r6", 
@@ -265,6 +263,7 @@ class AssemblerTestCase(unittest.TestCase):
             ], 
             "Everything, just thrown into one"
         )
+
 
 if __name__ == '__main__':
     unittest.main()
