@@ -29,9 +29,9 @@ class Parser:
     def parse(self) -> Program:
         items = []
         while self.index < len(self.tokens) - 1:
+            items.append(self.parse_item())
             while self.index < len(self.tokens) and isinstance(self.tokens[self.index], NewLine):
                 self.index += 1
-            items.append(self.parse_item())
         self.consume(Eof, "Unreachable")
         return Program(items)
     

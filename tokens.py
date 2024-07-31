@@ -45,7 +45,7 @@ class Tokenizer:
     
     def tokenize(self) -> List[Token]:
         while self.index < len(self.program):
-            if self.program[self.index] == "\n" and (len(self.tokens) == 0 or not isinstance(self.tokens[-1], NewLine)):
+            if self.program[self.index] == "\n" and len(self.tokens) != 0 and not isinstance(self.tokens[-1], NewLine):
                 self.tokens.append(NewLine())
             if self.program[self.index] in " \n\t":
                 self.index += 1
