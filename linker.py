@@ -31,5 +31,5 @@ def link(object_file_contents: str) -> bytes:
                 new_words += bin(labels[word])[2:].zfill(length)
             else:
                 new_words += word
-        byte_code += bytes.fromhex(hex(int(new_words, 2))[2:])
+        byte_code += bytes.fromhex(hex(int(new_words, 2))[2:].zfill(4))
     return byte_code.strip()
