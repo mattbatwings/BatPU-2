@@ -6,12 +6,12 @@ def make_schematic(mc_filename, schem_filename):
     
     # Generate 1024 xz positions
     
+    mem_start_pos = [-4, -1, 2]
     pos_list = []
-    start_pos = [-4, -1, 2]
 
     for i in range(2):
         for j in range(32):
-            pos = start_pos.copy() 
+            pos = mem_start_pos.copy() 
             if i == 1:
                 pos[0] -= 2
 
@@ -32,6 +32,8 @@ def make_schematic(mc_filename, schem_filename):
     # Write instruction to each position
 
     lines = [line.strip() for line in mc_file]
+    while len(lines) < 1024:
+        lines.append('0000000000000000')
     
     for address, line in enumerate(lines):
         if len(line) != 16:
@@ -58,6 +60,18 @@ def make_schematic(mc_filename, schem_filename):
             else:
                 schem.setBlock(tuple(new_pos), 'minecraft:purple_wool')
             new_pos[1] -= 2
+
+    # Reset program counter
+
+    pc_start_pos = [-21, -1, -16]
+    pos = pc_start_pos.copy()
+    
+    for _ in range(10):
+        schem.setBlock(tuple(pos), 'minecraft:repeater[facing=north,locked=true,powered=false]')
+        pos[1] -= 2
+
+
+    # Save
 
     if schem_filename[-6:] == '.schem':
         schem_filename = schem_filename[:-6]
