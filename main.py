@@ -1,13 +1,13 @@
 from assembler import assemble
+from schematic import make_schematic
 import sys
 
 
 def main():
-    if len(sys.argv) < 2:
-        exit("Not enough arguments.")
-    
-    assemble(sys.argv[1], sys.argv[2] if len(sys.argv) >= 3 else 'output.mc')
+    program = 'test'
 
+    assemble(f'programs/{program}.as', f'programs/{program}.mc')
+    make_schematic(f'programs/{program}.mc', f'programs/{program}.schem')
 
 if __name__ == '__main__':
     main()
