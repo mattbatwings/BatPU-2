@@ -42,16 +42,26 @@ def make_schematic(mc_filename, schem_filename):
 
         byte1 = line[8:]
         byte2 = line[:8]
-        new_line = byte1 + '0' + byte2
 
-        for i, char in enumerate(new_line):
+        for i, char in enumerate(byte1):
             if char == '1':
                 schem.setBlock(tuple(new_pos), f'minecraft:repeater[facing={face}]')
+            else:
+                schem.setBlock(tuple(new_pos), 'minecraft:purple_wool')
+            new_pos[1] -= 2
+
+        new_pos[1] -= 2
+
+        for i, char in enumerate(byte2):
+            if char == '1':
+                schem.setBlock(tuple(new_pos), f'minecraft:repeater[facing={face}]')
+            else:
+                schem.setBlock(tuple(new_pos), 'minecraft:purple_wool')
             new_pos[1] -= 2
 
     if schem_filename[-6:] == '.schem':
         schem_filename = schem_filename[:-6]
-        
+
     schem.save('.', schem_filename, version=mcschematic.Version.JE_1_18_2)
 
 
