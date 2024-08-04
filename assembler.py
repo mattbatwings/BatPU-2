@@ -37,9 +37,9 @@ def assemble(assembly_filename, mc_filename):
     for index, symbol in enumerate(ports):
         symbols[symbol] = index + 240
 
-    for i in range(256):
-        symbols[f'"{chr(i)}"'] = i
-        symbols[f"'{chr(i)}'"] = i
+    for i, letter in enumerate([' ', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '.', '!', '?']):
+        symbols[f'"{letter}"'] = i
+        symbols[f"'{letter}'"] = i
 
     # Extract definitions and labels
     def is_definition(word):
