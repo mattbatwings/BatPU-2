@@ -1,7 +1,5 @@
 from assembler import assemble
 from schematic import make_schematic
-import sys
-
 
 def main():
     program = 'mandelbrot'
