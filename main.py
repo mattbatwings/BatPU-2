@@ -15,7 +15,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-# cpusnake.schem - GOOD
-# cputetris.schem - GOOD
