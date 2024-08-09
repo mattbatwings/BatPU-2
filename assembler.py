@@ -1,3 +1,5 @@
+import sys
+
 def assemble(assembly_filename, mc_filename):
     assembly_file = open(assembly_filename, 'r')
     machine_code_file = open(mc_filename, 'w')
@@ -159,3 +161,9 @@ def assemble(assembly_filename, mc_filename):
 
         as_string = bin(machine_code)[2:].rjust(16, '0')
         machine_code_file.write(f'{as_string}\n')
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        exit("Not enough arguments.")
+
+    assemble(sys.argv[1], sys.argv[2] if len(sys.argv) >= 3 else 'output.mc')
