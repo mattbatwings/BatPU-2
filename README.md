@@ -75,8 +75,8 @@ Ports can be written as their name with underscores between them. For example, p
 
 DISCLAIMER: This will be **extremely slow**, as the cpu completes 1 instruction every 10 seconds at vanilla speed. See the next section for speedup methods.
 
->REQUIRED PREREQUISITES
-A copy of Minecraft Java Edition 1.18.2
+>REQUIRED PREREQUISITES \
+A copy of Minecraft Java Edition 1.18.2 \
 [Worldedit](https://www.curseforge.com/minecraft/mc-mods/worldedit) (Fabric Mod)
 [RedstoneTools](https://modrinth.com/mod/redstone-tools) (Fabric Mod)
 A python installation
