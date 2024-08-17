@@ -77,8 +77,8 @@ DISCLAIMER: This will be **extremely slow**, as the cpu completes 1 instruction 
 
 >REQUIRED PREREQUISITES \
 A copy of Minecraft Java Edition 1.18.2 \
-[Worldedit](https://www.curseforge.com/minecraft/mc-mods/worldedit) (Fabric Mod)
-[RedstoneTools](https://modrinth.com/mod/redstone-tools) (Fabric Mod)
+[Worldedit](https://www.curseforge.com/minecraft/mc-mods/worldedit) (Fabric Mod) \
+[RedstoneTools](https://modrinth.com/mod/redstone-tools) (Fabric Mod) \
 A python installation
 
 - Clone this repository
