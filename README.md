@@ -175,6 +175,10 @@ STR r15 r2
 LDI r15 draw_pixel
 STR r15 r0
 
+// Push screen buffer
+LDI r15 buffer_screen
+STR r15 r0
+
 HLT
 ```
 
