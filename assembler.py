@@ -89,6 +89,8 @@ def assemble(assembly_filename, mc_filename):
             words = ['adi', words[1], '-1'] # adi dest -1
         elif words[0] == 'not':
             words = ['nor', words[1], registers[0], words[2]] # nor A r0 dest
+        elif words[0] == "neg":
+            words = ["sub", registers[0], words[1], words[2]] # sub r0 A dest
 
         # lod/str optional offset
         if words[0] in ['lod', 'str'] and len(words) == 3:
