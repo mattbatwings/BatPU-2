@@ -85,8 +85,8 @@ A python installation
 
 - Clone this repository
 - Put the desired [program].as into the programs folder
-- Open main.py and change ```program =``` to the name of your program (Note: You may need to import mcschematic with the command "pip install mcschematic")
-- Run main.py 
+- Open main.py and change helloworld in ```program = 'helloworld'``` to the name of your program
+- Run main.py (Note: You may need to import mcschematic with the command "pip install mcschematic")
 - Drag and drop the resulting [program].schem into .minecraft/worldedit/schematics
 - Download the cpu from the [world download](https://www.planetminecraft.com/project/new-redstone-computer/)
 - Go to coordinate point 190.5, 154, -0.5. You should be standing on a light gray wool with two repeaters coming out of it (Note: Press F3 to view coordinates)
