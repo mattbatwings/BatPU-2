@@ -5,7 +5,7 @@ DISCLAIMER: Basic assembly knowledge is assumed.
 
 ## What's in this repo?
 
-All the supporting code I wrote for my new [redstone computer](https://youtu.be/3gBZHXqnleU?si=brgAO4tlePdB6vPR) \
+All the supporting code I wrote for my new [redstone computer](https://youtu.be/3gBZHXqnleU?si=brgAO4tlePdB6vPR)
 
 programs - A folder containing all the programs that were in the showcase \
 assembler py - A script to convert .as (assembly) files to .mc (machine code) files \
