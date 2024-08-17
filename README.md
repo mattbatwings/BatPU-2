@@ -45,7 +45,7 @@ JMP .loop
 Definitions of integer values are supported. Definitions are written with the following syntax:
 
 ```
-define my_variable 3
+define my_value 3
 ```
 
 This makes any future reference to my_variable resolve to 3.
