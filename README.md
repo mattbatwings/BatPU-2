@@ -1,7 +1,7 @@
 # BEFORE TRYING TO MAKE AND/OR RUN A PROGRAM, READ THIS WHOLE PAGE!
 DISCLAIMER: Basic assembly knowledge is assumed.
 
->If you've never done assembly, you can learn online, learn from talking to people on my discord, or you can wait until I cover it in my upcoming video series about redstone computing.
+>If you've never done assembly, you can learn online, learn from talking to people on my [discord](https://discord.gg/V5KFaF63mV), or you can wait until I cover it in my upcoming video series about redstone computing.
 
 ## What's in this repo?
 
