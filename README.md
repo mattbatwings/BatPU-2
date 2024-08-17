@@ -84,7 +84,7 @@ A copy of Minecraft Java Edition 1.18.2 \
 A python installation
 
 - Clone this repository
-- Put the desired (program).as into the programs folder
+- Put the desired [program].as into the programs folder
 - Run main.py with the name of your program set as the program (Note: You may need to import mcschematic with the command "pip install mcschematic") 
 - Drag and drop the resulting program.schem into .minecraft/worldedit/schematics
 - Download the cpu from the [world download](https://www.planetminecraft.com/project/new-redstone-computer/)
