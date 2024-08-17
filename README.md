@@ -58,9 +58,9 @@ Registers can be written as r0 through r15
 
 Immediates can be written or as binary/hex using the 0b/0x prefix 
 
-Zero flag true condition can be written as eq, =, z, zero
-Zero flag false condition can be written as ne, !=, nz, notzero
-Carry flag true condition can be written as ge, >=, c, carry
+Zero flag true condition can be written as eq, =, z, zero \
+Zero flag false condition can be written as ne, !=, nz, notzero \
+Carry flag true condition can be written as ge, >=, c, carry \
 Carry flag false condition can be written as lt, <, nc, notcarry
 
 Single characters can be written using single or double quotes. This will resolve to their character code in the ISA (Notes on box AB10)
