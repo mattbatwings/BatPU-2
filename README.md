@@ -106,7 +106,7 @@ A python installation
 [MCHPRS](https://github.com/MCHPR/MCHPRS/releases) is a custom server designed to speedup redstone to incredible speeds. This is what I used for the showcase.
 
 - NOTE THAT THESE INSTRUCTIONS ARE FOR WINDOWS ONLY
-- Grab the latest release
+- Grab the [latest release](https://github.com/MCHPR/MCHPRS/releases)
 - Run the .exe in a new folder
 - A server console should launch. Test connecting to the server by joining the multiplayer ip ```localhost``` Also, new folders/files should have also been created. One of these folders should be called "schems"
 - Go back to the cpu in singleplayer. You should have your program already pasted in and updated. Create a worldedit selection of the entire computer. Run ``//minsel``, ``//copy``, and ```//schem save [name]```
