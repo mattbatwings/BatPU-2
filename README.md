@@ -108,7 +108,7 @@ A python installation
 - NOTE THAT THESE INSTRUCTIONS ARE FOR WINDOWS ONLY
 - Grab the [latest release](https://github.com/MCHPR/MCHPRS/releases)
 - Run the .exe in a new folder
-- A server console should launch. Test connecting to the server by joining the multiplayer ip ```localhost``` Also, new folders/files should have also been created. One of these folders should be called "schems"
+- A server console should launch. Test connecting to the server by joining the multiplayer ip ```localhost```. Also, new folders/files should have also been created. One of these folders should be called "schems"
 - Go back to the cpu in singleplayer. You should have your program already pasted in and updated. Create a worldedit selection of the entire computer. Run ``//minsel``, ``//copy``, and ```//schem save [name]```
 - Transfer the newly created schematic from .minecraft/config/worldedit/schematics to the MCHPRS schems folder
 - Join the server again. Run ```//load [name]```, and ```//paste```
