@@ -8,7 +8,7 @@ DISCLAIMER: Basic assembly knowledge is assumed.
 All the supporting code I wrote for my new [redstone computer](https://youtu.be/3gBZHXqnleU?si=brgAO4tlePdB6vPR)
 
 programs - A folder containing all the programs that were in the showcase \
-assembler py - A script to convert .as (assembly) files to .mc (machine code) files \
+assembler.py - A script to convert .as (assembly) files to .mc (machine code) files \
 schematic.py - A script to convert .mc files to .schem (worldedit schematic) files \
 main.py - A script to convert .as files to .schem files (Using assembler.py, then schematic.py)
 
@@ -56,7 +56,7 @@ Opcodes can be written as their 3-letter mnemonic
 
 Registers can be written as r0 through r15
 
-Immediates can be written or as binary/hex using the 0b/0x prefix 
+Immediates can be written in decimal or as binary/hex using the 0b/0x prefix 
 
 Zero flag true condition can be written as eq, =, z, zero \
 Zero flag false condition can be written as ne, !=, nz, notzero \
