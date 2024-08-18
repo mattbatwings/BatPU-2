@@ -48,7 +48,7 @@ Definitions of integer values are supported. Definitions are written with the fo
 define my_value 3
 ```
 
-This makes any future reference to my_variable resolve to 3.
+This makes any future reference to my_value resolve to 3.
 
 ### Symbols
 
