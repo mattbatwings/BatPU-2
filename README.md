@@ -95,17 +95,27 @@ A python installation
 - Run ```//update```
 - Head to the input controller and press the "Run Program" button!
 
-### Speedup  Method #1 - Carpet Mod
+### Speedup Method #1 - Built-in `/tick` command
+
+> [!NOTE]
+> This one only works on Minecraft versions from snapshot 23w43a onwards (1.20.3 onwards)
+
+Run `/tick rate [x]` in chat, replace `[x]` with a number from 20 (default tick rate) up to 10000 (limit), or 
+run `/tick sprint 10d` in chat to run the game as fast as possible on your computer for 10 in-game days, can be cancelled with `/tick sprint stop`.   
+
+### Speedup Method #2 - Carpet Mod
 
 [Carpet](https://www.curseforge.com/minecraft/mc-mods/carpet) is a fabric mod that allows you to speed up the game. Vanilla minecraft runs at 20 game ticks per second, but running ```/tick rate [X]``` will change the speed to X game ticks per second instead. 
 
 500 is the maximum allowed tick rate, which results in a 25x speedup. This tick rate will execute 2.5 instructions per second rather than the vanilla 0.1 instructions per second.
 
-### Speedup Method #2 - MCHPRS
+### Speedup Method #3 - MCHPRS
 
 [MCHPRS](https://github.com/MCHPR/MCHPRS/releases) is a custom server designed to speedup redstone to incredible speeds. This is what I used for the showcase.
 
-- NOTE THAT THESE INSTRUCTIONS ARE FOR WINDOWS ONLY
+> [!NOTE]
+> These instructions are for Windows only
+
 - Grab the [latest release](https://github.com/MCHPR/MCHPRS/releases)
 - Run the .exe in a new folder
 - A server console should launch. Test connecting to the server by joining the multiplayer ip ```localhost```. Also, new folders/files should have also been created. One of these folders should be called "schems"
