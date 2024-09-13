@@ -188,7 +188,7 @@ HLT
         SUB r5 r1 r1
         JMP .cordic_setup
     .quadrant_2
-        LDI r12 0b11    // Set quadrant flag to negative x&y
+        LDI r12 0b11    // Set quadrant flag to negate x&y
         LDI r5 100      // Load +pi (3.1416*2^5 = ~100)
         SUB r1 r5 r1
         JMP .cordic_setup
@@ -216,8 +216,12 @@ HLT
             // with RSH instruction, which presents a problem for negative
             // numbers.  When shifting a negative value right, ones should
             // get shifted into the sign bit.  That doesn't happen so
-            // negative shifts aren't handled properly.  To get around this problem,
-            // for now, I'll OR in the sign bit after shifting.
+            // negative shifts aren't handled properly.  To get around this
+            // problem, I'll ADD in the sign bit after shifting.
+            // Note: The fact that the ALU only supports single bit shifts
+            // necessitates a loop and therefore slows down the CORDIC
+            // significantly.  Multi-bit shifts are certainly possible but
+            // would make the ALU much larger... as always, tradeoffs. :)
             AND r6 r10 r14  // Grab the sign bit for x
             AND r7 r10 r10  // Grab the sign bit for y
             .shift_loop
