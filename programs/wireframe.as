@@ -47,7 +47,7 @@ define atan_LUT_strt_addr          232
 define y_axis                      0
 define x_axis                      1
 define z_axis                      2
-define focal_length               127
+define focal_length                127
 
 
 // Load the arctan LUT into RAM.
@@ -110,10 +110,12 @@ LDI r1 28
         ADI r15 3
         LDI r5 y_axis      // Rotation axis
 
-        LDI r12 0
-        STR r12 r1  0 // Store angle in RAM
-        STR r12 r14 1 // Store number of vertices RAM
-        STR r12 r15 2 // Store vertice pointer in RAM
+// TODO define all of these offsets as constants
+        STR r0 r1  0 // Store angle in RAM
+        STR r0 r14 1 // Store number of vertices RAM
+        STR r0 r15 2 // Store vertice pointer in RAM
+        STR r0 r13 3 // Store the projected points pointer in RAM
+
         // TODO: Change rotation function so it doesn't call CORDIC
         // i.e. move CORDIC call outside of vertice loop since I don't
         // need to calculate it again each time
@@ -123,34 +125,83 @@ LDI r1 28
         ADI r1 16
         ADI r2 16
 
-        LDI r15 memory_mapped_io_addr
-        STR r15 r1 pixel_x_offset
-        STR r15 r2 pixel_y_offset
-        STR r15 r0 draw_pixel_offset
+        // Store the projected points in RAM
+        LDI r12 0
+        LOD r12 r13 3
+        STR r13 r1 0
+        STR r13 r2 1
+        ADI r13 2
+        STR r12 r13 3
+
+        // TODO get rid of this...
+//        LDI r15 memory_mapped_io_addr
+//        STR r15 r1 pixel_x_offset
+//        STR r15 r2 pixel_y_offset
+//        STR r15 r0 draw_pixel_offset
+//        STR r15 r0 buffer_screen_offset
 
         LDI r12 0
-        LOD r12 r1  0 // Store angle in RAM
-        LOD r12 r14 1 // Store number of vertices RAM
-        LOD r12 r15 2 // Store vertice pointer in RAM
+        LOD r12 r1  0 // Recall angle from RAM
+        LOD r12 r14 1 // Restore number of vertices from RAM
+        LOD r12 r15 2 // Restore vertice pointer from RAM
 
         DEC r14
         BRH nz .vertice_loop
 
-    LDI r12 0
-    STR r12 r1  0 // Store angle in RAM
-    STR r12 r14 1 // Store number of vertices RAM
-    STR r12 r15 2 // Store vertice pointer in RAM
+    // Now loop through all shape edges to draw lines
+    // First grab the number of edges
+    // r15 - pointer to shape table
+    // r6:r5 - vertice pair for each edge
+    // r12 - pointer to projected points table
+    // r13 - number of vertices
+    // r11 - number of projected points left
+    // r10 - Index into projected points table
+    // r14 - Number of shape edges
+    LOD r15 r14 0
+    INC r15
+    .edge_loop
 
-    LDI r15 memory_mapped_io_addr
-    STR r15 r0 buffer_screen_offset
-    STR r15 r0 clear_screen_buffer_offset
+//CAL .wait_for_user
+        // Load vertice pair index for edge
+        LOD r15 r5 0
+        LOD r15 r6 1
+        ADI r15 2
+        LOD r0 r13 1 // Get number of vertices
+        STR r0 r15 2
+        STR r0 r14 7
+        LDI r11 2    // Keep track of number of projected points to grab
+        LDI r10 0
+        LDI r12 projected_points_addr
+        .get_projected_xy
+            CMP r5 r10
+            BRH eq .store_projected_x0y0
+            CMP r6 r10
+            BRH eq .store_projected_x1y1
+            JMP .next_projected_xy
+            .store_projected_x0y0
+                LOD r12 r1 0
+                LOD r12 r2 1
+                DEC r11
+                JMP .next_projected_xy
+            .store_projected_x1y1
+                LOD r12 r3 0
+                LOD r12 r4 1
+                DEC r11
+            .next_projected_xy
+            ADI r12 2
+            INC r10
+            CMP r11 r0
+            BRH nz .get_projected_xy
 
-    LDI r12 0
-    LOD r12 r1  0 // Store angle in RAM
-    LOD r12 r14 1 // Store number of vertices RAM
-    LOD r12 r15 2 // Store vertice pointer in RAM
+            CAL .draw_line
+//          LDI r12 0
+            LOD r0 r15 2  // TODO... everywhere I use zero as an address needs r0
+            LOD r0 r14 7
+        DEC r14
+        BRH nz .edge_loop
 
-
+        LDI r12 0
+        LOD r12 r15 2
 
 
 //    // Push the r13 angle value to RAM since it gets modified inside the draw_line function
@@ -169,8 +220,13 @@ LDI r1 28
     // Display current angle
     LDI r15 memory_mapped_io_addr
     STR r15 r1 show_number_offset
+    STR r15 r0 buffer_screen_offset
+    STR r15 r0 clear_screen_buffer_offset
+
+//CAL .wait_for_user
 
     // Increment the angle and loop
+    LOD r0 r1  0 // Load angle
     ADI r1 1
     LDI r14 201  // Ending angle
     CMP r1 r14
@@ -178,6 +234,18 @@ LDI r1 28
     SUB r1 r14 r1
     JMP .main_loop
 HLT
+
+
+.wait_for_user
+// This function waits until the user presses one of the controller inputs.
+// Since the current VM doesn't have breakpoints, I use this function to
+// effectively add breakpoints to the code.
+    LDI r10 memory_mapped_io_addr
+    .wait_for_user_loop
+        LOD r10 r9 controller_input_offset
+        CMP r9 r0
+        BRH eq .wait_for_user_loop
+    RET
 
 
 .cordic
@@ -303,8 +371,6 @@ HLT
             BRH nz .cordic_loop
 
         // Adjust xy outputs accordingly based on quadrant
-
-        // Adjust x?
         .check_x_negate
         LDI r5 0b10
         AND r12 r5 r0
@@ -428,12 +494,11 @@ HLT
         .next_pixel
             INC r14       // Increment loop counter
             CMP r14 r5    // Exit loop when i > dx
-            BRH ge .buffer_screen
+            BRH ge .draw_line_exit
             JMP .draw_line_loop
 
-    .buffer_screen
-        STR r15 r0 buffer_screen_offset
-        RET
+    .draw_line_exit
+    RET
 
 
 .mult
@@ -457,7 +522,7 @@ HLT
 // (TODO... add flag for signed vs unsigned operation)
 
     LDI r4 128        // Sign bit mask
-    LDI r5 0xFF       // All ones mask 
+    LDI r5 0xFF       // All ones mask
     LDI r9 0          // Set product sign to 0 (positive)
     LDI r6 1          // LSB mask
     AND r2 r4 r0      // Determine if r2 is negative
@@ -544,13 +609,13 @@ HLT
 //                +--->|     ALU    |
 //    +--------------->| (subtract) |
 //    |                +------------+
-//    |                    |       
-//    |                    |       
+//    |                    |
+//    |                    |
 //    |   +-----------------------------------------------+
 //    +---| Remainder Reg (r6:r5) | Dividend Reg (r2:r1)  |<-- Quotient (shifted in)
 //        +-----------------------------------------------+
-//                       <-- shifted left  
-//        
+//                       <-- shifted left
+//
 //
     // Check to see if both bytes of divisor are zero; if so,
     // a divide-by-zero error occurred.  Use of the NOR instruction
@@ -763,9 +828,9 @@ HLT
     LOD r15 r4 pp_fl_plus_z_high
     CAL .div
 
-    // Trunc the results
+    // round the results
     LDI r3 2
-    CAL .trunc
+    CAL .round
     STR r15 r1 pp_x_projected
 
     // Calculate y_projected
@@ -779,9 +844,9 @@ HLT
     LOD r15 r4 pp_fl_plus_z_high
     CAL .div
 
-    // Now truncate the results
+    // Now round the results
     LDI r3 2
-    CAL .trunc
+    CAL .round
     STR r15 r1 pp_y_projected
 
     // Move x_projected and y_projected to output registers
@@ -815,7 +880,7 @@ HLT
 //    r4 = z
 //    r5 = rotation axis
 //
-// Outputs:   
+// Outputs:
 //    r2:r1 = rotated_x
 //    r4:r3 = rotated_y
 //    r6:r5 = rotated_z
@@ -874,17 +939,17 @@ HLT
     CMP r5 r6
     BRH z .go_z_axis_sel
     .go_y_axis_sel  // Default
-        STR r15 r2 rot_coord1 
+        STR r15 r2 rot_coord1
         STR r15 r4 rot_coord2
-        STR r15 r3 rot_coord3 
+        STR r15 r3 rot_coord3
         JMP .calc_cordic
     .go_z_axis_sel
-        STR r15 r2 rot_coord1 
+        STR r15 r2 rot_coord1
         STR r15 r3 rot_coord2
         STR r15 r4 rot_coord3
         JMP .calc_cordic
     .go_x_axis_sel
-        STR r15 r3 rot_coord1 
+        STR r15 r3 rot_coord1
         STR r15 r4 rot_coord2
         STR r15 r2 rot_coord3
 
@@ -900,14 +965,14 @@ HLT
     BRH z .cosine_pos
         LDI r1 0xFF
     .cosine_pos
-    STR r15 r1 rot_cosine_high 
+    STR r15 r1 rot_cosine_high
     STR r15 r2 rot_cosine_low
     LDI r1 0
     AND r12 r3 r0     // Check sign bit
     BRH z .sine_pos
         LDI r1 0xFF
     .sine_pos
-    STR r15 r1 rot_sine_high 
+    STR r15 r1 rot_sine_high
     STR r15 r3 rot_sine_low
 
     // Now... calculate the four terms in the rotation and store in RAM
@@ -963,7 +1028,7 @@ HLT
         .rotx_no_borrow
         SUB r4 r6 r4      // Subtract high bytes
         SUB r4 r7 r4      // Handle borrow
-        JMP .coord1_trunc
+        JMP .coord1_round
     .coord1_add           // For rotations around y, the two terms are added together
         LDI r7 0
         ADD r3 r5 r3      // Add low bytes
@@ -973,12 +1038,12 @@ HLT
         ADD r4 r6 r4      // Add the high bytes
         ADD r4 r7 r4      // Handle carry
 
-    .coord1_trunc
-    // Move and truncate the results (TODO remove truncation here)
+    .coord1_round
+    // Move and round the results
     MOV r3 r1
     MOV r4 r2
     LDI r3 6
-    CAL .trunc
+    CAL .round
     STR r14 r1 rot_coord1_low
     STR r14 r2 rot_coord1_high
 
@@ -1001,7 +1066,7 @@ HLT
         .roty_no_carry
         ADD r4 r6 r4      // Add high bytes
         ADD r4 r7 r4      // And handle carry
-        JMP .coord2_trunc
+        JMP .coord2_round
     .coord2_sub           // For rotations around axis y, subtraction is performed
         LDI r7 0
         SUB r5 r3 r3      // Subtract low bytes
@@ -1010,13 +1075,13 @@ HLT
         .roty_no_borrow
         SUB r6 r4 r4      // Subtract high bytes
         SUB r4 r7 r4      // Handle borrow
-    .coord2_trunc
+    .coord2_round
 
-    // Move and truncate the results (TODO remove truncation here)
+    // Move and round the results
     MOV r3 r1
     MOV r4 r2
     LDI r3 6
-    CAL .trunc
+    CAL .round
     STR r14 r1 rot_coord2_low
     STR r14 r2 rot_coord2_high
 
@@ -1043,14 +1108,14 @@ HLT
         LOD r14 r1 rot_coord1_low
         LOD r14 r4 rot_coord2_high
         LOD r14 r3 rot_coord2_low
-        LOD r14 r6 rot_coord3_high 
-        LOD r14 r5 rot_coord3_low 
+        LOD r14 r6 rot_coord3_high
+        LOD r14 r5 rot_coord3_low
         JMP .rot_exit
     .rstr_xz_sel
         LOD r14 r2 rot_coord1_high
         LOD r14 r1 rot_coord1_low
-        LOD r14 r4 rot_coord3_high 
-        LOD r14 r3 rot_coord3_low 
+        LOD r14 r4 rot_coord3_high
+        LOD r14 r3 rot_coord3_low
         LOD r14 r6 rot_coord2_high
         LOD r14 r5 rot_coord2_low
         JMP .rot_exit
@@ -1059,42 +1124,61 @@ HLT
         LOD r14 r1 rot_coord2_low
         LOD r14 r6 rot_coord3_high
         LOD r14 r5 rot_coord3_low
-        LOD r14 r4 rot_coord1_high 
-        LOD r14 r3 rot_coord1_low 
+        LOD r14 r4 rot_coord1_high
+        LOD r14 r3 rot_coord1_low
     .rot_exit
     RET
 
 
-.trunc
-// The following function performs simple truncation of a
-// 16-bit input value.  The number of bits truncated off
-// is configurable.
+.round
+// The following function performs rounding of the 16-bit input value.
+// Round is done by right shifting the value for one minus the total
+// number of bits to drop (held in r3).  Then, 1 is added/subtracted to
+// the value before truncating off the final bit, which effectively rounds
+// to the nearest integer.
 // Inputs:
 //    r2:r1 = 16-bit input
-//    r3    = Number of bits to truncate
+//    r3    = Number of bits to round off
 // Registers:
 //    r4    = Bit shifted from high to low
 //    r5    = Sign bit
-//    r6    = scratch
-//    TODO consider adding rounding to this logic and change name from trunc to round if so
+//    r7:r6 = scratch
 
     LDI r6 128
     AND r2 r6 r5        // Grab the sign bit
     LDI r6 1
-    .trunc_loop
+    .round_loop
         CMP r3 r0
-        BRH eq .trunc_done
+        BRH eq .round_done
+        CMP r3 r6
+        BRH ne .round_shift
+        .round_final_bit
+            CMP r5 r6
+            BRH eq .round_neg
+            .round_pos
+                INC r1
+                BRH nc .round_no_carry
+                    INC r2
+                .round_no_carry
+                JMP .round_shift
+            .round_neg
+                DEC r1
+                BRH c .round_no_borrow
+                    DEC r2
+                .round_no_borrow
+                JMP .round_shift
+        .round_shift
         AND r2 r6 r4    // Grab bit shifted from high to low byte
         RSH r2 r2
         ADD r2 r5 r2    // Add the sign bit after shifting
         RSH r1 r1
         CMP r4 r6       // Did a '1' move from high to low byte?
-        BRH ne .next_trunc_iteration
+        BRH ne .next_round_iteration
             ADI r1 128  // If so, add it back
-        .next_trunc_iteration
+        .next_round_iteration
         DEC r3
-        JMP .trunc_loop
-    .trunc_done
+        JMP .round_loop
+    .round_done
     RET
 
 
@@ -1122,7 +1206,7 @@ HLT
     // Square pyramid shape
     LDI r15 shape_vertices_edges_addr
     LDI r14 8     // Number of vertices
-    STR r15 r14 0 
+    STR r15 r14 0
     LDI r14 32    // x0
     STR r15 r14 1
     LDI r14 32    // y0
@@ -1177,47 +1261,60 @@ HLT
     ADI r15 8
     LDI r14 -32  // z7
     STR r15 r14 0
+    LDI r14 12     // Number of edges
+    STR r15 r14 1
+    LDI r14 0     // Edge 0 (vertices 0,1)
+    STR r15 r14 2
+    LDI r14 1
+    STR r15 r14 3
+    LDI r14 1     // Edge 1 (vertices 1,3)
+    STR r15 r14 4
+    LDI r14 3
+    STR r15 r14 5
+    LDI r14 2     // Edge 2 (vertices 2,3)
+    STR r15 r14 6
+    LDI r14 3
+    STR r15 r14 7
 
-//
-//
-//
-//    ADI r15 8
-//    LDI r14 8     // Number of edges
-//    STR r15 r14 0
-//    LDI r14 0     // Edge 0 (vertices 0,1)
-//    STR r15 r14 1
-//    LDI r14 1
-//    STR r15 r14 2
-//    LDI r14 1     // Edge 1 (vertices 1,2)
-//    STR r15 r14 3
-//    LDI r14 2
-//    STR r15 r14 4
-//    LDI r14 2     // Edge 2 (vertices 2,3)
-//    STR r15 r14 5
-//    LDI r14 3
-//    STR r15 r14 6
-//    LDI r14 3     // Edge 3 (vertices 3,0)
-//    STR r15 r14 7
-//
-//    ADI r15 8
-//    LDI r14 0
-//    STR r15 r14 0
-//    LDI r14 0     // Edge 4 (vertices 0,4)
-//    STR r15 r14 1
-//    LDI r14 4
-//    STR r15 r14 2
-//    LDI r14 1     // Edge 5 (vertices 1,4)
-//    STR r15 r14 3
-//    LDI r14 4
-//    STR r15 r14 4
-//    LDI r14 2     // Edge 6 (vertices 2,4)
-//    STR r15 r14 5
-//    LDI r14 4
-//    STR r15 r14 6
-//    LDI r14 3     // Edge 7 (vertices 3,4)
-//    STR r15 r14 7
-//
-//    ADI r15 8
-//    LDI r14 4
-//    STR r15 r14 0
+    ADI r15 8
+    LDI r14 2     // Edge 3 (vertices 2,0)
+    STR r15 r14 0
+    LDI r14 0
+    STR r15 r14 1
+    LDI r14 4     // Edge 4 (vertices 4,5)
+    STR r15 r14 2
+    LDI r14 5
+    STR r15 r14 3
+    LDI r14 5     // Edge 5 (vertices 5,7)
+    STR r15 r14 4
+    LDI r14 7
+    STR r15 r14 5
+    LDI r14 6     // Edge 6 (vertices 6,7)
+    STR r15 r14 6
+    LDI r14 7
+    STR r15 r14 7
+
+    ADI r15 8
+    LDI r14 4     // Edge 7 (vertices 4,6)
+    STR r15 r14 0
+    LDI r14 6
+    STR r15 r14 1
+    LDI r14 0     // Edge 8 (vertices 0,4)
+    STR r15 r14 2
+    LDI r14 4
+    STR r15 r14 3
+    LDI r14 1     // Edge 9 (vertices 1,5)
+    STR r15 r14 4
+    LDI r14 5
+    STR r15 r14 5
+    LDI r14 2     // Edge 10 (vertices 2,6)
+    STR r15 r14 6
+    LDI r14 6
+    STR r15 r14 7
+
+    ADI r15 8
+    LDI r14 3     // Edge 11 (vertices 3,7)
+    STR r15 r14 0
+    LDI r14 7
+    STR r15 r14 1
     RET
