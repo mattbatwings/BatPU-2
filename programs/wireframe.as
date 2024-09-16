@@ -74,7 +74,7 @@ define y_axis                      0
 define x_axis                      1
 define z_axis                      2
 define focal_length                127
-define rotation_angle_increment    1
+define rotation_angle_increment    5
 define rotation_angle_max          201
 
 
