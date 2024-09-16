@@ -1,18 +1,20 @@
 // Wireframe Demo by Dave Walker
 
-// This program is an implementation of a 3D wireframe renderer on MattBatWing's BatPU-2
-// Minecraft computer. I created it because I wanted to try to reproduce the one Matt created
-// here:
+// This program is an implementation of a 3D wireframe renderer running on MattBatWing's
+// BatPU-2 Minecraft computer. I created it because I wanted to try to reproduce renderer
+// Matt created here:
 //
 // https://www.youtube.com/watch?v=hFRlnNci3Rs
 //
 // It began as a simple demo of a CORDIC function operating in rotation mode.  A CORDIC can be
-// used to iteratively calculate sine and cosine of an angle.  After the CORDIC, I "simply" had
-// to add Bresenham's line drawing algorithm, a 16-bit multiplier, 16-bit divider, a 3D rotation
-// function, a 3D-to-2D project function, and some other bits and bobs. :)
+// used to iteratively calculate sine and cosine of an angle.  After the CORDIC, I "only" had
+// to add Bresenham's line drawing algorithm, a 16-bit multiplier, a 16-bit divider, a 3D
+// rotation function, a 3D-to-2D project function, and some other bits and bobs. :)
 //
-// It was fun to make, and I'm reasonably happy with it.  However, it's SLOW.  Way slower than
-// Matt's hardware implementation shown in the video above, which is totally expected.
+// It was fun to make, and I'm reasonably happy with it.  However, it's SLOW... way slower than
+// Matt's hardware implementation shown in the video above, which is totally expected.  I mean...
+// dedicated hardware is always going to be much faster than software running on a general
+// purpose processor.
 //
 // Note: The code is still pretty messy. I need to do a clean-up pass on it and make a few
 // more performance improvements (like moving the CORDIC function call outside of the vertice
@@ -44,10 +46,25 @@ define unsigned_mode_offset        5
 define rng_offset                  6
 define controller_input_offset     7
 
+// Shape Table Offsets
+define x_offset                    0
+define y_offset                    1
+define z_offset                    2
+define number_of_edges             0
+define edge_vertice_0              0
+define edge_vertice_1              1
+
+// Various addresses for storing values.  All are offset from r0.
+define rotation_angle              0
+define number_of_vertices          1
+define shape_table_pointer         2
+define projected_xy_pointer        3
+define edges_remaining             4
+
 // Various RAM addresses
 define register_stack_pointer      50
-define shape_vertices_edges_addr   100
-define projected_points_addr       150
+define projected_points_addr       100
+define shape_vertices_edges_addr   150
 define atan_LUT_strt_addr          232
 
 // Other constants
@@ -55,6 +72,8 @@ define y_axis                      0
 define x_axis                      1
 define z_axis                      2
 define focal_length                127
+define rotation_angle_increment    5
+define rotation_angle_max          201
 
 
 // Load the arctan LUT into RAM.
@@ -71,7 +90,7 @@ STR r15 r0 unsigned_mode_offset
 STR r15 r0 clear_chars_buffer_offset
 STR r15 r0 buffer_chars_offset
 
-// Write "3DROTATION"
+// Write "ROTATION"
 STR r15 r0 clear_chars_buffer_offset
 LDI r14 " "
 STR r15 r14 write_char_offset
@@ -100,7 +119,7 @@ STR r15 r0 buffer_chars_offset
 LDI r1 0
 .main_loop
 
-    // Point to 3D share vertice/edge table
+    // Point to 3D shape vertice/edge table
     LDI r15 shape_vertices_edges_addr
     LOD r15 r14 0   // Load number of vertices in r14
     INC r15         // And point to first vertice
@@ -111,136 +130,118 @@ LDI r1 0
     // Now loop through all of the 3D vertices in memory to
     // rotate and project them onto a 2D plane for display.
     .vertice_loop
-        LOD r15 r2 0
-        LOD r15 r3 1
-        LOD r15 r4 2
-        ADI r15 3
-        LDI r5 y_axis      // Rotation axis
+        // Load the 3D x,y,z coordinates from RAM
+        LOD r15 r2 x_offset
+        LOD r15 r3 y_offset
+        LOD r15 r4 z_offset
+        ADI r15 3           // Point to the next set of coordinates
+        LDI r5 y_axis       // Set the rotation axis
 
-// TODO define all of these offsets as constants
-        STR r0 r1  0 // Store angle in RAM
-        STR r0 r14 1 // Store number of vertices RAM
-        STR r0 r15 2 // Store vertice pointer in RAM
-        STR r0 r13 3 // Store the projected points pointer in RAM
+        // Push variables into RAM
+        STR r0 r1  rotation_angle
+        STR r0 r14 number_of_vertices
+        STR r0 r15 shape_table_pointer
+        STR r0 r13 projected_xy_pointer
 
         // TODO: Change rotation function so it doesn't call CORDIC
         // i.e. move CORDIC call outside of vertice loop since I don't
-        // need to calculate it again each time
+        // need to recalculate it for each vertice.  Doing so should
+        // significantly improve performance.
         CAL .rotation
         LDI r7 focal_length
         CAL .pixel_projection
+        // Center the projected points on the screen
         ADI r1 16
         ADI r2 16
 
         // Store the projected points in RAM
-        LDI r12 0
-        LOD r12 r13 3
-        STR r13 r1 0
-        STR r13 r2 1
+        LOD r0 r13 projected_xy_pointer
+        STR r13 r1 x_offset
+        STR r13 r2 y_offset
         ADI r13 2
-        STR r12 r13 3
+        STR r0 r13 projected_xy_pointer
 
-        // TODO get rid of this...
-//        LDI r15 memory_mapped_io_addr
-//        STR r15 r1 pixel_x_offset
-//        STR r15 r2 pixel_y_offset
-//        STR r15 r0 draw_pixel_offset
-//        STR r15 r0 buffer_screen_offset
+        // Recall variables from RAM
+        LOD r0 r1   rotation_angle
+        LOD r0 r14  number_of_vertices
+        LOD r0 r15  shape_table_pointer
 
-        LDI r12 0
-        LOD r12 r1  0 // Recall angle from RAM
-        LOD r12 r14 1 // Restore number of vertices from RAM
-        LOD r12 r15 2 // Restore vertice pointer from RAM
-
-        DEC r14
+        DEC r14   // Decrement the vertice counter and loop if more exist
         BRH nz .vertice_loop
 
-    // Now loop through all shape edges to draw lines
-    // First grab the number of edges
+    // After calculating projected xy for all vertices, loop through all shape edges to
+    // draw lines between them.  Each edge is defined as a pair of vertices.
     // r15 - pointer to shape table
-    // r6:r5 - vertice pair for each edge
+    // r14 - Number of shape edges
     // r12 - pointer to projected points table
     // r13 - number of vertices
-    // r11 - number of projected points left
-    // r10 - Index into projected points table
-    // r14 - Number of shape edges
-    LOD r15 r14 0
+    // r11 - number of projected points left for the current edge
+    // r10 - Projected points table index
+    // r6:r5 - vertice pair for each edge
+
+    // First grab the number of edges from the shape table
+    LOD r15 r14 number_of_edges
     INC r15
     .edge_loop
 
-//CAL .wait_for_user
         // Load vertice pair index for edge
-        LOD r15 r5 0
-        LOD r15 r6 1
+        LOD r15 r5 edge_vertice_0
+        LOD r15 r6 edge_vertice_1
+        // And point to the next edge vertice pair
         ADI r15 2
-        LOD r0 r13 1 // Get number of vertices
-        STR r0 r15 2
-        STR r0 r14 7
-        LDI r11 2    // Keep track of number of projected points to grab
-        LDI r10 0
+        STR r0 r15 shape_table_pointer
+        STR r0 r14 edges_remaining
         LDI r12 projected_points_addr
+        LDI r11 2     // Number of projected xy points to grab for each edge
+        LDI r10 0     // Projected xy table index
         .get_projected_xy
+            // Check both edge vertices again the projected xy table index
             CMP r5 r10
             BRH eq .store_projected_x0y0
             CMP r6 r10
             BRH eq .store_projected_x1y1
             JMP .next_projected_xy
             .store_projected_x0y0
-                LOD r12 r1 0
-                LOD r12 r2 1
+                LOD r12 r1 x_offset
+                LOD r12 r2 y_offset
                 DEC r11
                 JMP .next_projected_xy
             .store_projected_x1y1
-                LOD r12 r3 0
-                LOD r12 r4 1
+                LOD r12 r3 x_offset
+                LOD r12 r4 y_offset
                 DEC r11
             .next_projected_xy
-            ADI r12 2
-            INC r10
-            CMP r11 r0
+            ADI r12 2   // Point to the next project xy point
+            INC r10     // Increment the table index
+            CMP r11 r0  // ... and check if done
             BRH nz .get_projected_xy
 
-            CAL .draw_line
-//          LDI r12 0
-            LOD r0 r15 2  // TODO... everywhere I use zero as an address needs r0
-            LOD r0 r14 7
+        // Draw a line between the two projected xy points
+        CAL .draw_line
+
+        LOD r0 r15 shape_table_pointer
+        LOD r0 r14 edges_remaining
         DEC r14
         BRH nz .edge_loop
 
-        LDI r12 0
-        LOD r12 r15 2
-
-
-//    // Push the r13 angle value to RAM since it gets modified inside the draw_line function
-//    LDI r15 register_stack_pointer
-//    STR r15 r13
-//    CAL .draw_line
-//    // And pop it back off when finished
-//    LDI r15 register_stack_pointer
-//    LOD r15 r13
-
-//    // Store the x1/y1 coordinates to RAM so they can be x2/y2 next iteration
-//    LDI r15 x2_coord
-//    STR r15 r3 x2_coord
-//    STR r15 r4 y2_coord
-    LOD r0 r1  0 // Load angle
+    // Load the rotation angle from RAM
+    LOD r0 r1  rotation_angle
 
     // Display current angle
     LDI r15 memory_mapped_io_addr
     STR r15 r1 show_number_offset
+
+    // Update the screen
     STR r15 r0 buffer_screen_offset
     STR r15 r0 clear_screen_buffer_offset
 
-//CAL .wait_for_user
-
     // Increment the angle and loop
-    ADI r1 5
-    LDI r14 201  // Ending angle
+    ADI r1  rotation_angle_increment
+    LDI r14 rotation_angle_max
     CMP r1 r14
     BRH lt .main_loop
     SUB r1 r14 r1
     JMP .main_loop
-HLT
 
 
 .wait_for_user
