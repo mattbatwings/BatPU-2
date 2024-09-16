@@ -60,6 +60,8 @@ define number_of_vertices          1
 define shape_table_pointer         2
 define projected_xy_pointer        3
 define edges_remaining             4
+define cosine                      5
+define sine                        6
 
 // Various RAM addresses
 define register_stack_pointer      50
@@ -72,7 +74,7 @@ define y_axis                      0
 define x_axis                      1
 define z_axis                      2
 define focal_length                127
-define rotation_angle_increment    5
+define rotation_angle_increment    1
 define rotation_angle_max          201
 
 
@@ -115,9 +117,20 @@ STR r15 r14 write_char_offset
 STR r15 r0 buffer_chars_offset
 
 
-// Initialze rotation angle
+// Initialze rotation angle and store it in RAM
 LDI r1 0
+
 .main_loop
+    // Save the rotation angle at the start of each loop (since the
+    // CORDIC function modifies it)
+    STR r0 r1 rotation_angle
+
+    // Call the CORDIC function to calculate sine and cosine for the
+    // rotation angle
+    CAL .cordic
+    LOD r0 r1 rotation_angle
+    STR r0 r2 cosine
+    STR r0 r3 sine
 
     // Point to 3D shape vertice/edge table
     LDI r15 shape_vertices_edges_addr
@@ -131,11 +144,11 @@ LDI r1 0
     // rotate and project them onto a 2D plane for display.
     .vertice_loop
         // Load the 3D x,y,z coordinates from RAM
-        LOD r15 r2 x_offset
-        LOD r15 r3 y_offset
-        LOD r15 r4 z_offset
+        LOD r15 r3 x_offset
+        LOD r15 r4 y_offset
+        LOD r15 r5 z_offset
         ADI r15 3           // Point to the next set of coordinates
-        LDI r5 y_axis       // Set the rotation axis
+        LDI r6 y_axis       // Set the rotation axis
 
         // Push variables into RAM
         STR r0 r1  rotation_angle
@@ -143,10 +156,9 @@ LDI r1 0
         STR r0 r15 shape_table_pointer
         STR r0 r13 projected_xy_pointer
 
-        // TODO: Change rotation function so it doesn't call CORDIC
-        // i.e. move CORDIC call outside of vertice loop since I don't
-        // need to recalculate it for each vertice.  Doing so should
-        // significantly improve performance.
+        LOD r0 r1 cosine
+        LOD r0 r2 sine
+
         CAL .rotation
         LDI r7 focal_length
         CAL .pixel_projection
@@ -211,7 +223,7 @@ LDI r1 0
                 LOD r12 r4 y_offset
                 DEC r11
             .next_projected_xy
-            ADI r12 2   // Point to the next project xy point
+            ADI r12 2   // Point to the next projected xy point
             INC r10     // Increment the table index
             CMP r11 r0  // ... and check if done
             BRH nz .get_projected_xy
@@ -262,8 +274,8 @@ LDI r1 0
 //  r1  = angle in radians (fixed point in the form u2.5)
 //        (Values between 0 and 2*pi are supported.)
 // Outputs:
-//  r2  = sine  (r1)
-//  r3  = cosine(r1)
+//  r2  = cosine(r1)
+//  r3  = sine  (r1)
 // Register usage
 //  r1  - angle in radians (s1.6)
 //  r2  - x (s1.6)
@@ -881,12 +893,12 @@ LDI r1 0
 //    2 = [y,z]
 //
 // Inputs:
-//    r1  = rotation angle in radians (fixed point in the form u2.5)
-//          (Values between 0 and 2*pi are supported.)  // TODO... make input and outputs consistent
-//    r2 = x
-//    r3 = y
-//    r4 = z
-//    r5 = rotation axis
+//    r1 = cosine(A) (fixed point in the form s1.6)
+//    r2 = sine  (A) (fixed point in the form s1.6)
+//    r3 = x
+//    r4 = y
+//    r5 = z
+//    r6 = rotation axis
 //
 // Outputs:
 //    r2:r1 = rotated_x
@@ -938,35 +950,42 @@ LDI r1 0
     ADI r14 8
 
     // Organize input coordinates in RAM according to the
-    // rotation axis selection input (r5)
-    STR r15 r5 rot_axis_sel
-    LDI r6 x_axis
-    CMP r5 r6
+    // rotation axis selection input (r6)
+    STR r15 r6 rot_axis_sel
+    LDI r7 x_axis
+    CMP r6 r7
     BRH z .go_x_axis_sel
-    LDI r6 z_axis
-    CMP r5 r6
+    LDI r7 z_axis
+    CMP r6 r7
     BRH z .go_z_axis_sel
     .go_y_axis_sel  // Default
-        STR r15 r2 rot_coord1
-        STR r15 r4 rot_coord2
-        STR r15 r3 rot_coord3
-        JMP .calc_cordic
-    .go_z_axis_sel
-        STR r15 r2 rot_coord1
-        STR r15 r3 rot_coord2
+        STR r15 r3 rot_coord1
+        STR r15 r5 rot_coord2
         STR r15 r4 rot_coord3
         JMP .calc_cordic
-    .go_x_axis_sel
+    .go_z_axis_sel
         STR r15 r3 rot_coord1
         STR r15 r4 rot_coord2
-        STR r15 r2 rot_coord3
+        STR r15 r5 rot_coord3
+        JMP .calc_cordic
+    .go_x_axis_sel
+        STR r15 r4 rot_coord1
+        STR r15 r5 rot_coord2
+        STR r15 r3 rot_coord3
 
     .calc_cordic
-    // Call the CORDIC function to calculate sine and cosine for the
-    // rotation angle
-    CAL .cordic
+    // Move cosine/sine inputs to match output of cordic function
+    // previous called below (so I don't have to juggle around a bunch
+    // of registers)
+    MOV r2 r3
+    MOV r1 r2
+    // NOTE: This call was moved outside of the main vertice loop to
+    // improve performance.
+//    // Call the CORDIC function to calculate sine and cosine for the
+//    // rotation angle
+//    CAL .cordic
 
-    // Convert them to 16-bit values for the multiplications below.
+    // Convert sine and cosine to 16-bit values for the multiplication`s below.
     LDI r12 128
     LDI r1 0
     AND r12 r2 r0     // Check sign bit
