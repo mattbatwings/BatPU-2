@@ -15,15 +15,6 @@
 // Matt's hardware implementation shown in the video above, which is totally expected.  I mean...
 // dedicated hardware is always going to be much faster than software running on a general
 // purpose processor.
-//
-// Note: The code is still pretty messy. I need to do a clean-up pass on it and make a few
-// more performance improvements (like moving the CORDIC function call outside of the vertice
-// loop).  I'm also considering modifying the CORDIC to use 16-bit math to improve its
-// accuracy, which should make the cube animation a bit smoother.  Also, I'm not crazy with
-// how I pass inputs to functions in this code using registers.  I think I'd prefer to pass
-// them via memory (i.e. a stack).  I'd also possibly like to dedicate a register as a
-// stack pointer.  I haven't written assembly in years so I'm not accustomed to dealing with
-// this stuff directly.  Perhaps I'll change it later... perhaps not.)
 
 
 // Memory mapped IO port mapping offsets
