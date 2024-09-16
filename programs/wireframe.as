@@ -1,18 +1,27 @@
 // Wireframe Demo by Dave Walker
 
-// A basic implementation of a CORDIC function operating in rotation mode.  A CORDIC can be
-// used to iteratively calculate sine and cosine of an angle. Due to the limitations of this
-// 8-bit computer, the CORDIC isn't particularly accurate.  A number of values in this code are
-// represented as fixed point representations.  Therefore, you'll see notations like u2.5 and
-// s1.6.  These notations denote signed/unsigned, the number of integer bits, and the number of
-// fractional bits.  For example, the sine/cosine outputs are all s1.6.
+// This program is an implementation of a 3D wireframe renderer on MattBatWing's BatPU-2
+// Minecraft computer. I created it because I wanted to try to reproduce the one Matt created
+// here:
 //
-// In addition to the CORDIC, a draw_line function is included based on Bresenham's Algorithm.
+// https://www.youtube.com/watch?v=hFRlnNci3Rs
 //
-// (Note: I'm not crazy with how I pass inputs to functions in this code using registers.  I think
-// I'd prefer to pass them via memory (i.e. a stack).  I'd also possibly like to dedicate a
-// register as a stack pointer.  I haven't written assembly in years so I'm not accustomed
-// to dealing with this stuff directly.  Perhaps I'll change it later... perhaps not.)
+// It began as a simple demo of a CORDIC function operating in rotation mode.  A CORDIC can be
+// used to iteratively calculate sine and cosine of an angle.  After the CORDIC, I "simply" had
+// to add Bresenham's line drawing algorithm, a 16-bit multiplier, 16-bit divider, a 3D rotation
+// function, a 3D-to-2D project function, and some other bits and bobs. :)
+//
+// It was fun to make, and I'm reasonably happy with it.  However, it's SLOW.  Way slower than
+// Matt's hardware implementation shown in the video above, which is totally expected.
+//
+// Note: The code is still pretty messy. I need to do a clean-up pass on it and make a few
+// more performance improvements (like moving the CORDIC function call outside of the vertice
+// loop).  I'm also considering modifying the CORDIC to use 16-bit math to improve its
+// accuracy, which should make the cube animation a bit smoother.  Also, I'm not crazy with
+// how I pass inputs to functions in this code using registers.  I think I'd prefer to pass
+// them via memory (i.e. a stack).  I'd also possibly like to dedicate a register as a
+// stack pointer.  I haven't written assembly in years so I'm not accustomed to dealing with
+// this stuff directly.  Perhaps I'll change it later... perhaps not.)
 
 
 // Memory mapped IO port mapping offsets
@@ -36,8 +45,6 @@ define rng_offset                  6
 define controller_input_offset     7
 
 // Various RAM addresses
-define x2_coord                    0
-define y2_coord                    1
 define register_stack_pointer      50
 define shape_vertices_edges_addr   100
 define projected_points_addr       150
@@ -90,7 +97,7 @@ STR r15 r0 buffer_chars_offset
 
 
 // Initialze rotation angle
-LDI r1 28
+LDI r1 0
 .main_loop
 
     // Point to 3D share vertice/edge table
@@ -216,6 +223,7 @@ LDI r1 28
 //    LDI r15 x2_coord
 //    STR r15 r3 x2_coord
 //    STR r15 r4 y2_coord
+    LOD r0 r1  0 // Load angle
 
     // Display current angle
     LDI r15 memory_mapped_io_addr
@@ -226,8 +234,7 @@ LDI r1 28
 //CAL .wait_for_user
 
     // Increment the angle and loop
-    LOD r0 r1  0 // Load angle
-    ADI r1 1
+    ADI r1 5
     LDI r14 201  // Ending angle
     CMP r1 r14
     BRH lt .main_loop
