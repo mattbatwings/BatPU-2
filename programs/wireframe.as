@@ -139,7 +139,7 @@ LDI r1 0
         LOD r15 r4 y_offset
         LOD r15 r5 z_offset
         ADI r15 3           // Point to the next set of coordinates
-        LDI r6 y_axis       // Set the rotation axis
+        LDI r6 x_axis       // Set the rotation axis
 
         // Push variables into RAM
         STR r0 r1  rotation_angle
@@ -147,8 +147,8 @@ LDI r1 0
         STR r0 r15 shape_table_pointer
         STR r0 r13 projected_xy_pointer
 
-        LOD r0 r1 cosine
-        LOD r0 r2 sine
+        LOD r0 r1  cosine
+        LOD r0 r2  sine
 
         CAL .rotation
         LDI r7 focal_length
@@ -165,9 +165,9 @@ LDI r1 0
         STR r0 r13 projected_xy_pointer
 
         // Recall variables from RAM
-        LOD r0 r1   rotation_angle
-        LOD r0 r14  number_of_vertices
-        LOD r0 r15  shape_table_pointer
+        LOD r0 r1  rotation_angle
+        LOD r0 r14 number_of_vertices
+        LOD r0 r15 shape_table_pointer
 
         DEC r14   // Decrement the vertice counter and loop if more exist
         BRH nz .vertice_loop
@@ -778,6 +778,9 @@ LDI r1 0
 
 .pixel_projection
 // The following function is used to project a 3D point in space onto a 2D plane.
+// It utilizes "weak" perspective projection as described below:
+//
+//    https://en.wikipedia.org/wiki/3D_projection
 //
 // Given a 3D coordinate [x,y,z], it'll return x_projected and y_projected by
 // calculating the following:
@@ -862,26 +865,38 @@ LDI r1 0
 
     // Move x_projected and y_projected to output registers
     MOV r1 r2                   // y_projected -> r2
-    LOD r15 r1 pp_x_projected  // x_projected -> r1
+    LOD r15 r1 pp_x_projected   // x_projected -> r1
     RET
 
 
 .rotation
-// This function applies the following rotation matrix to
-// a set of two coordinates:
+// This function rotates a 3D xyz coordinate around a
+// selected axis of rotation.  It does so by multiplying
+// the [x,y,z] vector by one of three rotation matrices R.
 //
-//           +-               -+
-//           | cos(A)  -sin(A) |
-//      Rz = |                 |
-//           | sin(A)   cos(A) |
-//           +-               -+
+//           +-                 -+
+//           |  cos(A)  -sin(A)  |
+//      Rx = |                   |
+//           |  sin(A)   cos(A)  |
+//           +-                 -+
 //
-// Given a 3D coordinate (composed of xyz values), the
-// coordinate pair utilized can be selected based on the
-// coordinate pair selection input as follows:
-//    0 = [x,y]
-//    1 = [x,z]
-//    2 = [y,z]
+//           +-                 -+
+//           |  cos(A)   sin(A)  |
+//      Ry = |                   |
+//           | -sin(A)   cos(A)  |
+//           +-                 -+
+//
+//           +-                 -+
+//           |  cos(A)  -sin(A)  |
+//      Rz = |                   |
+//           |  sin(A)   cos(A)  |
+//           +-                 -+
+//
+// In all cases, the coordinate for the axis of rotation
+// does not change.  Refer to the following Wikipedia
+// article for details:
+//
+// https://en.wikipedia.org/wiki/Rotation_matrix 
 //
 // Inputs:
 //    r1 = cosine(A) (fixed point in the form s1.6)
@@ -905,9 +920,9 @@ LDI r1 0
     define rot_coord2          1 // 2nd rotation coordinate
     define rot_coord3          2 // 3rd rotation coordinate (fixed)
     define rot_axis_sel        3 // rotation axis
-    define rot_cosine_high     4 // Cosine
+    define rot_cosine_high     4 // cosine
     define rot_cosine_low      5
-    define rot_sine_high       6 // Sine
+    define rot_sine_high       6 // sine
     define rot_sine_low        7
 
     define coord1_x_cosine_low  -1
@@ -933,7 +948,7 @@ LDI r1 0
     define rot_coord3_high   2
     define rot_coord3_low    3
 
-    // Set up pointer for temporary storage
+    // Set up pointers for temporary storage
     LDI r15 register_stack_pointer
     ADI r15 8
     MOV r15 r14
@@ -953,18 +968,18 @@ LDI r1 0
         STR r15 r3 rot_coord1
         STR r15 r5 rot_coord2
         STR r15 r4 rot_coord3
-        JMP .calc_cordic
+        JMP .adjst_trig
     .go_z_axis_sel
         STR r15 r3 rot_coord1
         STR r15 r4 rot_coord2
         STR r15 r5 rot_coord3
-        JMP .calc_cordic
+        JMP .adjst_trig
     .go_x_axis_sel
         STR r15 r4 rot_coord1
         STR r15 r5 rot_coord2
         STR r15 r3 rot_coord3
 
-    .calc_cordic
+    .adjst_trig
     // Move cosine/sine inputs to match output of cordic function
     // previous called below (so I don't have to juggle around a bunch
     // of registers)
@@ -1026,14 +1041,15 @@ LDI r1 0
     STR r15 r4 coord2_x_cosine_low
     STR r15 r5 coord2_x_cosine_high
 
+
     // Calculate coord1_rotation = coord1*cosine(A) +/- coord2*sine(A)
     LOD r15 r3 coord1_x_cosine_low
     LOD r15 r4 coord1_x_cosine_high
     LOD r15 r5 coord2_x_sine_low
     LOD r15 r6 coord2_x_sine_high
 
-    // Perform 16-bit addition/subtraction (emulating SBB)
-    // Addition/subtraction depends on the axis of rotation TODO better comments
+    // Perform 16-bit addition/subtraction, depending on the axis
+    // of rotation.
     LOD r15 r8 rot_axis_sel   // Restore axis selection
     LDI r9 y_axis
     CMP r8 r9
@@ -1071,12 +1087,13 @@ LDI r1 0
     LOD r15 r5 coord2_x_cosine_low
     LOD r15 r6 coord2_x_cosine_high
 
-    // Perform 16-bit addition/subtraction TODO better comments
+    // Perform 16-bit addition/subtraction, again depending on the axis
+    // of rotation.
     LOD r15 r8 rot_axis_sel   // Restore axis selection
     LDI r9 y_axis
     CMP r8 r9
     BRH z .coord2_sub
-    .coord2_add     // For rotations around axis x & z, adding is performed
+    .coord2_add     // For rotations around axis x & z, addition is performed
         LDI r7 0
         ADD r3 r5 r3      // Add low bytes
         BRH nc .roty_no_carry
@@ -1093,8 +1110,8 @@ LDI r1 0
         .roty_no_borrow
         SUB r6 r4 r4      // Subtract high bytes
         SUB r4 r7 r4      // Handle borrow
-    .coord2_round
 
+    .coord2_round
     // Move and round the results
     MOV r3 r1
     MOV r4 r2
@@ -1115,21 +1132,13 @@ LDI r1 0
 
     // Organize outputs coordinates based on the rotation axis selection.
     LOD r15 r5 rot_axis_sel   // Restore axis selection
-    LDI r6 y_axis
-    CMP r5 r6
-    BRH z .rstr_xz_sel
     LDI r6 x_axis
     CMP r5 r6
-    BRH z .rstr_yz_sel
-    .rstr_x_axis // Default selection
-        LOD r14 r2 rot_coord1_high
-        LOD r14 r1 rot_coord1_low
-        LOD r14 r4 rot_coord2_high
-        LOD r14 r3 rot_coord2_low
-        LOD r14 r6 rot_coord3_high
-        LOD r14 r5 rot_coord3_low
-        JMP .rot_exit
-    .rstr_xz_sel
+    BRH z .rstr_x_axis
+    LDI r6 z_axis
+    CMP r5 r6
+    BRH z .rstr_z_axis
+    .rstr_y_axis  // Default selection
         LOD r14 r2 rot_coord1_high
         LOD r14 r1 rot_coord1_low
         LOD r14 r4 rot_coord3_high
@@ -1137,13 +1146,21 @@ LDI r1 0
         LOD r14 r6 rot_coord2_high
         LOD r14 r5 rot_coord2_low
         JMP .rot_exit
-    .rstr_yz_sel
-        LOD r14 r2 rot_coord2_high
-        LOD r14 r1 rot_coord2_low
-        LOD r14 r6 rot_coord3_high
-        LOD r14 r5 rot_coord3_low
+    .rstr_x_axis
+        LOD r14 r2 rot_coord3_high
+        LOD r14 r1 rot_coord3_low
         LOD r14 r4 rot_coord1_high
         LOD r14 r3 rot_coord1_low
+        LOD r14 r6 rot_coord2_high
+        LOD r14 r5 rot_coord2_low
+        JMP .rot_exit
+    .rstr_z_axis
+        LOD r14 r2 rot_coord1_high
+        LOD r14 r1 rot_coord1_low
+        LOD r14 r4 rot_coord2_high
+        LOD r14 r3 rot_coord2_low
+        LOD r14 r6 rot_coord3_high
+        LOD r14 r5 rot_coord3_low
     .rot_exit
     RET
 
