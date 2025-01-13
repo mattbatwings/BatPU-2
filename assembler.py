@@ -1,10 +1,6 @@
 import sys
 
-def assemble(assembly_filename, mc_filename):
-    assembly_file = open(assembly_filename, 'r')
-    machine_code_file = open(mc_filename, 'w')
-    lines = (line.strip() for line in assembly_file)
-
+def assemble(lines):
     # Remove comments and blanklines
     for comment_symbol in ['/', ';', '#']:
         lines = [line.split(comment_symbol)[0] for line in lines]
@@ -80,7 +76,7 @@ def assemble(assembly_filename, mc_filename):
         if words[0] == 'cmp':
             words = ['sub', words[1], words[2], registers[0]] # sub A B r0
         elif words[0] == 'mov':
-            words = ['add', words[1], registers[0], words[2], ] # add A r0 dest
+            words = ['add', words[1], registers[0], words[2]] # add A r0 dest
         elif words[0] == 'lsh':
             words = ['add', words[1], words[1], words[2]] # add A A dest
         elif words[0] == 'inc':
@@ -160,12 +156,73 @@ def assemble(assembly_filename, mc_filename):
             if words[3] < -8 or words[3] > 7: # 2s comp [-8, 7]
                 exit(f'Invalid offset for {opcode} on line {pc}')
             machine_code |= words[3] & (2 ** 4 - 1)
+        yield machine_code
 
-        as_string = bin(machine_code)[2:].rjust(16, '0')
-        machine_code_file.write(f'{as_string}\n')
+
+def linesBinWriter(f, machine_code_list):
+    first = True
+    for machine_code in machine_code_list:
+        if first: first = False
+        else: f.write('\n')
+        f.write(bin(machine_code)[2:].rjust(16, '0'))
+    f.write('\n')
+
+def hexWriter(f, machine_code_list):
+    for machine_code in machine_code_list:
+        f.write(hex(machine_code)[2:].rjust(4, '0'))
+    f.write('\n')
+
+def cHexWriter(f, machine_code_list):
+    first = True
+    for machine_code in machine_code_list:
+        if first: first = False
+        else: f.write(', ')
+        f.write(hex(machine_code))
+    f.write('\n')
+
+def binWriterBE(f, machine_code_list):
+    # let's stick to big endian everyone for consistency's sake
+    for machine_code in machine_code_list:
+        f.write(machine_code.to_bytes(2, 'big'))
+
+formatters = {
+    'lines-bin': linesBinWriter,
+    'c-hex': cHexWriter,
+    'hex': hexWriter,
+    'binary': binWriterBE,
+}
+
+def exit_usage():
+    exit("""usage: assembler.py <input_file> [output_file] [format]
+available formats:
+  lines-bin - ascii file contatining line-separated 16-bit binary numbers (default)
+  hex - zero-padded 4-character hex
+  c-hex - comma-separated c-style hex literals e.g. 0x1234, 0x456
+  binary - binary file (big endian)""")
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        exit("Not enough arguments.")
+        print("Not enough arguments.")
+        exit_usage()
 
-    assemble(sys.argv[1], sys.argv[2] if len(sys.argv) >= 3 else 'output.mc')
+    assembly_filename = sys.argv[1]
+    machine_code_filename = sys.argv[2] if len(sys.argv) >= 3 else 'output.mc'    
+    fmt = sys.argv[3] if len(sys.argv) >= 4 else 'lines-bin'
+
+    if fmt not in formatters:
+        print(f"Invalid formatter '{fmt}'")
+        exit_usage()
+
+    try:
+        with open(assembly_filename, 'r') as assembly_file:
+            lines = (line.strip() for line in assembly_file)
+            machine_code_list = list(assemble(lines))
+    except IOError as e:
+        exit(f"Cannot read input file '{assembly_filename}'! {str(e)}")
+        
+    try:
+        with open(machine_code_filename, 'wb' if fmt == 'binary' else 'w') as out_file:
+            formatters[fmt](out_file, machine_code_list)
+    except IOError as e:
+        exit(f"Cannot write output file '{machine_code_filename}'! {str(e)}")
+        
