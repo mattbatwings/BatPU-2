@@ -67,6 +67,18 @@ Single characters can be written using single or double quotes. This will resolv
 
 Ports can be written as their name with underscores between them. For example, port 246 has name "Clear Screen Buffer", so clear_screen_buffer will resolve to 246
 
+### Pseudo-instructions
+
+The assembler supports these pseudo-instructions:
+
+- `CMP A B` -> `SUB A B r0`
+- `MOV A C` -> `ADD A r0 C`
+- `LSH A C` -> `ADD A A C`
+- `INC A` -> `ADI A 1`
+- `DEC A` -> `ADI A -1`
+- `NOT A C` -> `NOR A r0 C`
+- `NEG A C` -> `SUB r0 A C`
+
 ## Running a program on the emulator
 
 - Grab the [latest release](https://github.com/AdoHTQ/Batpu2-VM/releases)

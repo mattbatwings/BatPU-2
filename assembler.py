@@ -75,22 +75,24 @@ def assemble(assembly_filename, mc_filename):
             exit(f'Could not resolve {word}')
         return symbols[word]
 
+    pseudo_instructions = {
+        'cmp': (3, lambda instruction_words: ['sub', instruction_words[1], instruction_words[2], registers[0]]),
+        'mov': (3, lambda instruction_words: ['add', instruction_words[1], registers[0], instruction_words[2]]),
+        'lsh': (3, lambda instruction_words: ['add', instruction_words[1], instruction_words[1], instruction_words[2]]),
+        'inc': (2, lambda instruction_words: ['adi', instruction_words[1], '1']),
+        'dec': (2, lambda instruction_words: ['adi', instruction_words[1], '-1']),
+        'not': (3, lambda instruction_words: ['nor', instruction_words[1], registers[0], instruction_words[2]]),
+        'neg': (3, lambda instruction_words: ['sub', registers[0], instruction_words[1], instruction_words[2]]),
+    }
+
     for pc, words in enumerate(instructions):
         # Resolve pseudo-instructions
-        if words[0] == 'cmp':
-            words = ['sub', words[1], words[2], registers[0]] # sub A B r0
-        elif words[0] == 'mov':
-            words = ['add', words[1], registers[0], words[2], ] # add A r0 dest
-        elif words[0] == 'lsh':
-            words = ['add', words[1], words[1], words[2]] # add A A dest
-        elif words[0] == 'inc':
-            words = ['adi', words[1], '1'] # adi dest 1
-        elif words[0] == 'dec':
-            words = ['adi', words[1], '-1'] # adi dest -1
-        elif words[0] == 'not':
-            words = ['nor', words[1], registers[0], words[2]] # nor A r0 dest
-        elif words[0] == "neg":
-            words = ["sub", registers[0], words[1], words[2]] # sub r0 A dest
+        pseudo_instruction = pseudo_instructions.get(words[0])
+        if pseudo_instruction is not None:
+            expected_word_count, rewrite = pseudo_instruction
+            if len(words) != expected_word_count:
+                exit(f'Incorrect number of operands for {words[0]} on line {pc}')
+            words = rewrite(words)
 
         # lod/str optional offset
         if words[0] in ['lod', 'str'] and len(words) == 3:
