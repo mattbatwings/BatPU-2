@@ -6,7 +6,7 @@ def assemble(assembly_filename, mc_filename):
     lines = (line.strip() for line in assembly_file)
 
     # Remove comments and blanklines
-    for comment_symbol in ['//', ';', '#']:
+    for comment_symbol in ['//', '/', ';', '#']:
         lines = [line.split(comment_symbol, 1)[0] for line in lines]
     lines = [line for line in lines if line.strip()]
 
