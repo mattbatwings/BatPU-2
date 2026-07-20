@@ -10,7 +10,8 @@ All the supporting code I wrote for my new [redstone computer](https://youtu.be/
 programs - A folder containing all the programs that were in the showcase \
 assembler.py - A script to convert .as (assembly) files to .mc (machine code) files \
 schematic.py - A script to convert .mc files to .schem (worldedit schematic) files \
-main.py - A script to convert .as files to .schem files (Using assembler.py, then schematic.py)
+main.py - A script to convert .as files to .schem files (Using assembler.py, then schematic.py)\
+schematic-r.py - A script to convert .mc files to .schem (worldedit schematic) files for the computer in [video series](https://www.youtube.com/playlist?list=PL5LiOvrbVo8nPTtdXAdSmDWzu85zzdgRT)
 
 ## How can I create a program?
 
