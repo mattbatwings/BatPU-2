@@ -4,7 +4,7 @@ def make_schematic(mc_filename, schem_filename):
     mc_file = open(mc_filename, 'r')
     schem = mcschematic.MCSchematic()
 
-    # +90度顺时针旋转：(x,y,z) -> (-z, y, x)，east->south, south->west, west->north, north->east
+    # +90 degree clockwise rotation: (x,y,z) -> (-z, y, x)，east->south, south->west, west->north, north->east
     _orig_setBlock = schem.setBlock
     def rotated_setBlock(pos, block_data):
         rotated_pos = (-pos[2], pos[1], pos[0])
@@ -41,7 +41,7 @@ def make_schematic(mc_filename, schem_filename):
             my_pos_list[row + col * 16] = pos.copy()      # north ( > )
 
             pos_south = pos.copy()
-            pos_south[0] -= 2           # south 沿 X 落后 2 格(中间空 1 格),同一列 ( < )
+            pos_south[0] -= 2           # south 2 spaces behind X
             my_pos_list[512 + row + col * 16] = pos_south
 
     pos_list = my_pos_list
