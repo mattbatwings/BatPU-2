@@ -1,0 +1,374 @@
+// Connect 4 by NoName_Official
+
+// AD to move piece, B to drop it
+
+// changelog
+// v1.0: intial release
+// v1.1: added border
+
+// r1 x pos
+// r2 y pos
+// r3 x screen pos
+// r4 y screen pos
+// r5 x loop
+// r6 y loop
+// r7 player
+// r8 cell data
+// r13 tmp
+// r12 open cells remaining
+
+DEFINE LEFT 1
+DEFINE RIGHT 4
+DEFINE B 16
+DEFINE BOARD_SIZE 42  // 6*7=42
+
+	LDI r1 1
+	CAL .DRAW_BORDER
+	LDI r1 29
+	CAL .DRAW_BORDER
+	
+	LDI r12 BOARD_SIZE
+	LDI r1 3
+	LDI r2 6
+	LDI r7 0
+	CAL .DRAW_CELL
+.MAIN_LOOP
+	CAL .CLEAR_CELL
+	LDI r15 controller_input
+	LOD r15 r14
+	LDI r13 RIGHT
+	AND r14 r13 r0
+	BRH EQ .NOT_RIGHT
+	INC r1
+	LDI r13 7
+	CMP r1 r13
+	BRH LT .RIGHT_NO_OVERFLOW
+	ADI r1 -7
+.RIGHT_NO_OVERFLOW
+.NOT_RIGHT
+	LDI r13 LEFT
+	AND r14 r13 r0
+	BRH EQ .NOT_LEFT
+	DEC r1
+	LDI r13 7
+	CMP r1 r13
+	BRH LT .LEFT_NO_UNDERFLOW
+	LDI r1 6
+.LEFT_NO_UNDERFLOW
+.NOT_LEFT
+	
+	LDI r13 B
+	AND r13 r14 r0
+	BRH EQ .NOT_B
+	CAL .DROP
+.NOT_B
+
+	CAL .DRAW_CELL
+	LDI r15 buffer_screen
+	STR r15 r0
+	JMP .MAIN_LOOP
+
+.DROP
+	DEC r2
+	CAL .GET_CELL_ADDR
+	LOD r8 r8
+	CMP r8 r0
+	BRH NE .DROP_INVALID
+.DROP_LOOP
+	CMP r2 r0
+	BRH EQ .DROP_DONE
+	DEC r2
+	CAL .GET_CELL_ADDR
+	LOD r8 r8
+	CMP r8 r0
+	BRH EQ .DROP_LOOP
+	INC r2
+.DROP_DONE
+	CAL .GET_CELL_ADDR
+	LSH r7 r13
+	DEC r13
+	STR r8 r13
+	CAL .DRAW_CELL
+	CAL .DETECT_WIN_LOSE
+	LDI r13 1
+	SUB r13 r7 r7
+	LDI r2 6
+RET
+.DROP_INVALID
+	INC r2
+RET
+
+// r1 x
+// r2 y
+// r3 old_x
+// r4 old_y
+// r9 count
+// r10 dir_x
+// r11 dir_y
+// r14 4 * dir_x
+// r15 4 * dir_y
+.CHECK_DIR
+	LDI r9 0
+	LDI r6 7
+	
+	LDI r5 3
+.CHECK_DIR_MOVE_LOOP
+	SUB r1 r10 r1
+	SUB r2 r11 r2
+	CMP r1 r6
+	BRH GE .CHECK_DIR_MOVE_BREAK
+	CMP r2 r6
+	BRH GE .CHECK_DIR_MOVE_BREAK
+	DEC r5
+	BRH NE .CHECK_DIR_MOVE_LOOP
+	JMP .CHECK_DIR_MOVE_DONE
+
+.CHECK_DIR_MOVE_BREAK
+	ADD r1 r10 r1
+	ADD r2 r11 r2
+.CHECK_DIR_MOVE_DONE
+	LDI r13 4
+	SUB r13 r5 r5
+
+.CHECK_DIR_INIT_LOOP
+	CMP r1 r6
+	BRH GE .CHECK_DIR_RET
+	CMP r2 r6
+	BRH GE .CHECK_DIR_RET
+	CAL .GET_CELL_ADDR
+	LOD r8 r8
+	ADD r9 r8 r9
+	ADD r1 r10 r1
+	ADD r2 r11 r2
+	DEC r5
+	BRH NE .CHECK_DIR_INIT_LOOP
+	
+	LDI r13 4
+	CMP r9 r13
+	BRH EQ .O_WIN
+	LDI r13 -4
+	CMP r9 r13
+	BRH EQ .X_WIN
+	LSH r10 r14
+	LSH r14 r14
+	LSH r11 r15
+	LSH r15 r15
+	LDI r5 3
+.CHECK_DIR_LOOP
+	CMP r1 r6
+	BRH GE .CHECK_DIR_RET
+	CMP r2 r6
+	BRH GE .CHECK_DIR_RET
+	
+	CAL .GET_CELL_ADDR
+	LOD r8 r8
+	ADD r9 r8 r9
+	SUB r1 r14 r1
+	SUB r2 r15 r2
+	CMP r1 r6
+	BRH GE .CHECK_DIR_CONTINUE
+	CMP r2 r6
+	BRH GE .CHECK_DIR_CONTINUE
+	CAL .GET_CELL_ADDR
+	LOD r8 r8
+	SUB r9 r8 r9
+
+.CHECK_DIR_CONTINUE
+	ADD r1 r14 r1
+	ADD r2 r15 r2
+	ADD r1 r10 r1
+	ADD r2 r11 r2
+	LDI r13 4
+	CMP r9 r13
+	BRH EQ .O_WIN
+	LDI r13 -4
+	CMP r9 r13
+	BRH EQ .X_WIN
+	DEC r5
+	BRH NE .CHECK_DIR_LOOP
+.CHECK_DIR_RET
+RET
+
+.O_WIN
+	LDI r15 clear_chars_buffer
+	STR r15 r0
+	LDI r15 write_char
+	LDI r13 'O'
+	STR r15 r13
+	JMP .WIN
+
+.X_WIN
+	LDI r15 clear_chars_buffer
+	STR r15 r0
+	LDI r15 write_char
+	LDI r13 'X'
+	STR r15 r13
+
+.WIN
+	LDI r13 ' '
+	STR r15 r13
+	LDI r13 'W'
+	STR r15 r13
+	LDI r13 'O'
+	STR r15 r13
+	LDI r13 'N'
+	STR r15 r13
+	LDI r13 '!'
+	STR r15 r13
+	LDI r15 buffer_chars
+	STR r15 r0
+	LDI r15 buffer_screen
+	STR r15 r0
+HLT
+
+// r1 x
+// r2 y
+.DETECT_WIN_LOSE
+	MOV r1 r3
+	MOV r2 r4
+	LDI r10 1
+	LDI r11 -1
+	CAL .CHECK_DIR
+	MOV r3 r1
+	MOV r4 r2
+	INC r11
+	CAL .CHECK_DIR
+	MOV r3 r1
+	MOV r4 r2
+	INC r11
+	CAL .CHECK_DIR
+	MOV r3 r1
+	MOV r4 r2
+	DEC r10
+	CAL .CHECK_DIR
+	MOV r3 r1
+	MOV r4 r2
+	DEC r12
+	BRH EQ .END_DRAW
+RET
+
+.END_DRAW
+	LDI r15 clear_chars_buffer
+	STR r15 r0
+	LDI r15 write_char
+	LDI r13 'D'
+	STR r15 r13
+	LDI r13 'R'
+	STR r15 r13
+	LDI r13 'A'
+	STR r15 r13
+	LDI r13 'W'
+	STR r15 r13
+	LDI r13 '!'
+	STR r15 r13
+	LDI r15 buffer_chars
+	STR r15 r0
+HLT
+
+// r8 addr
+.GET_CELL_ADDR
+	LSH r1 r8
+	LSH r8 r8
+	LSH r8 r8
+	ADD r8 r2 r8
+RET
+
+// r1 x
+// r2 y
+// r3 screen x
+// r4 screen y
+.GET_SCREEN_COORDS
+	LSH r1 r3
+	LSH r3 r3
+	LSH r2 r4
+	LSH r4 r4
+	ADI r3 2
+RET
+
+.CLEAR_CELL
+	CAL .GET_SCREEN_COORDS
+	LDI r15 pixel_x
+	STR r15 r3
+	LDI r15 pixel_y
+	STR r15 r4
+	LDI r5 3
+.CLEAR_CELL_X_LOOP
+	LDI r6 3
+.CLEAR_CELL_Y_LOOP
+	LDI r15 clear_pixel
+	STR r15 r0
+	INC r4
+	LDI r15 pixel_y
+	STR r15 r4
+	DEC r6
+	BRH NE .CLEAR_CELL_Y_LOOP
+	INC r3
+	ADI r4 -3
+	LDI r15 pixel_y
+	STR r15 r4
+	LDI r15 pixel_x
+	STR r15 r3
+	DEC r5
+	BRH NE .CLEAR_CELL_X_LOOP
+RET
+
+// r1 x
+// r2 y
+// r7 player
+.DRAW_CELL
+	CAL .GET_SCREEN_COORDS
+	CMP r7 r0
+	BRH EQ .DRAW_X
+	CAL ._DRAW_PIXEL
+	INC r3
+	CAL ._DRAW_PIXEL
+	INC r3
+	CAL ._DRAW_PIXEL
+	INC r4
+	CAL ._DRAW_PIXEL
+	INC r4
+	CAL ._DRAW_PIXEL
+	DEC r3
+	CAL ._DRAW_PIXEL
+	DEC r3
+	CAL ._DRAW_PIXEL
+	DEC r4
+	CAL ._DRAW_PIXEL
+RET
+
+
+._DRAW_PIXEL
+	LDI r15 pixel_x
+	STR r15 r3
+	LDI r15 pixel_y
+	STR r15 r4
+	LDI r15 draw_pixel
+	STR r15 r0
+RET
+
+.DRAW_X
+	CAL ._DRAW_PIXEL
+	ADI r3 2
+	CAL ._DRAW_PIXEL
+	DEC r3
+	INC r4
+	CAL ._DRAW_PIXEL
+	DEC r3
+	INC r4
+	CAL ._DRAW_PIXEL
+	ADI r3 2
+	CAL ._DRAW_PIXEL
+RET
+
+.DRAW_BORDER
+	LDI r15 pixel_x
+	STR r15 r1
+	LDI r15 pixel_y
+	LDI r14 draw_pixel
+	LDI r2 27
+.DRAW_BORDER_LOOP
+	DEC r2
+	STR r15 r2
+	STR r14 r0
+	BRH NE .DRAW_BORDER_LOOP
+RET

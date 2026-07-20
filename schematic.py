@@ -29,11 +29,11 @@ def make_schematic(mc_filename, schem_filename):
     pos_list_north = []  # address 0~511
     pos_list_south = []  # address 512~1023
 
-    for row in range(32):       # X direction, 32 columns
-        for col in range(32):   # Z direction, 32 rows
+    for col in range(32):       # X direction, 32 columns
+        for row in range(32):   # Z direction, 32 rows
             pos = mem_start_pos.copy()
             # pos[0] -= col * 2           # each column 2 apart in X
-            pos[0] -= row * 3           # each pair 3 apart in Z
+            pos[0] -= row * 2           # each pair 3 apart in Z
             x_offset =  col * 2
             if col >= 16:
                 x_offset += 4           # second half of columns are 36 apart in X
