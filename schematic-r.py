@@ -26,24 +26,23 @@ def make_schematic(mc_filename, schem_filename):
     # address 0~511: north-facing, address 512~1023: south-facing (paired, same column)
 
     mem_start_pos = [0, -1, 0]
-    pos_list_north = [None] * 513  # address 0~511
-    pos_list_south = [None] * 513  # address 512~1023
     my_pos_list = [None] * 1025
     for col in range(32):       # X direction, 32 columns
-        for row in range(16):   # Z direction, 32 rows
+        for row in range(16):   # Z direction, 16 rows
             pos = mem_start_pos.copy()
             # pos[0] -= col * 2           # each column 2 apart in X
-            pos[0] -= row * 2           # each pair 3 apart in Z
+            if row % 2 == 0:
+                pos[2] -= 1             # first row in each pair is 1 behind
+            pos[0] -= row * 7
             x_offset =  col * 2
             if col >= 16:
                 x_offset += 4           # second half of columns are 36 apart in X
             pos[2] += x_offset
-            my_pos_list[row + col * 16] = pos.copy()
+            my_pos_list[row + col * 16] = pos.copy()      # north ( > )
 
             pos_south = pos.copy()
-            pos_south[0] += 1                              # south 只沿 X 偏 1,Z 不变
+            pos_south[0] -= 2           # south 沿 X 落后 2 格(中间空 1 格),同一列 ( < )
             my_pos_list[512 + row + col * 16] = pos_south
-            pos[2] += 1
 
     pos_list = my_pos_list
     # Write instruction to each position
@@ -59,7 +58,7 @@ def make_schematic(mc_filename, schem_filename):
         
         face = 'east' if address < 512 else 'west'
         new_pos = pos_list[address].copy()
-
+        line = line[::-1]  
         byte1 = line[8:]
         byte2 = line[:8]
 
@@ -70,7 +69,7 @@ def make_schematic(mc_filename, schem_filename):
                 schem.setBlock(tuple(new_pos), 'minecraft:purple_wool')
             new_pos[1] -= 2
 
-        new_pos[1] -= 4
+        new_pos[1] -= 2
 
         for i, char in enumerate(byte2):
             if char == '1':

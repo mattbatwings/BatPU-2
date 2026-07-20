@@ -3,54 +3,37 @@ import mcschematic
 def make_schematic(mc_filename, schem_filename):
     mc_file = open(mc_filename, 'r')
     schem = mcschematic.MCSchematic()
-
-    # +90度顺时针旋转：(x,y,z) -> (-z, y, x)，east->south, south->west, west->north, north->east
-    _orig_setBlock = schem.setBlock
-    def rotated_setBlock(pos, block_data):
-        rotated_pos = (-pos[2], pos[1], pos[0])
-        if 'facing=east' in block_data:
-            block_data = block_data.replace('facing=east', 'facing=south')
-        elif 'facing=south' in block_data:
-            block_data = block_data.replace('facing=south', 'facing=west')
-        elif 'facing=west' in block_data:
-            block_data = block_data.replace('facing=west', 'facing=north')
-        elif 'facing=north' in block_data:
-            block_data = block_data.replace('facing=north', 'facing=east')
-        _orig_setBlock(rotated_pos, block_data)
-    schem.setBlock = rotated_setBlock
     
     # Generate 1024 xz positions
-    # Layout: 32x32 grid
-    # X axis: 32 columns, each instruction 2 apart (1 gap)
-    # Z axis: 32 rows, each pair (north+south) spaced 3 apart (z, z+1, then +2 gap)
-    # address 0~511: north-facing, address 512~1023: south-facing (paired, same column)
+    
+    mem_start_pos = [-4, -1, 2]
+    pos_list = []
 
-    mem_start_pos = [0, -1, 0]
-    pos_list_north = []  # address 0~511
-    pos_list_south = []  # address 512~1023
+    for i in range(2):
+        for j in range(32):
+            pos = mem_start_pos.copy() 
+            if i == 1:
+                pos[0] -= 2
 
-    for col in range(32):       # X direction, 32 columns
-        for row in range(32):   # Z direction, 32 rows
-            pos = mem_start_pos.copy()
-            # pos[0] -= col * 2           # each column 2 apart in X
-            pos[0] -= row * 2           # each pair 3 apart in Z
-            x_offset =  col * 2
-            if col >= 16:
-                x_offset += 4           # second half of columns are 36 apart in X
-            pos[2] += x_offset
-            pos_list_north.append(pos.copy())
-
-            pos_south = pos.copy()
-            pos_south[0] += 1           # south is 1 behind north in Z
-            pos_list_south.append(pos_south)
-
-    pos_list = pos_list_north + pos_list_south
+            pos[2] += 2 * j
+            if j >= 16:
+                pos[2] += 4
+            
+            for k in range(16):
+                pos_list.append(pos.copy())
+                    
+                if k % 2 == 0:
+                    pos[0] -= 7
+                    pos[2] += 1 if j < 16 else -1
+                else:
+                    pos[0] -= 7
+                    pos[2] -= 1 if j < 16 else -1
+    
     # Write instruction to each position
 
     lines = [line.strip() for line in mc_file]
     while len(lines) < 1024:
         lines.append('0000000000000000')
-        # add nop to fill space which may be used by the program previously (flash it)
     
     for address, line in enumerate(lines):
         if len(line) != 16:
@@ -69,7 +52,7 @@ def make_schematic(mc_filename, schem_filename):
                 schem.setBlock(tuple(new_pos), 'minecraft:purple_wool')
             new_pos[1] -= 2
 
-        new_pos[1] -= 4
+        new_pos[1] -= 2
 
         for i, char in enumerate(byte2):
             if char == '1':
@@ -79,7 +62,7 @@ def make_schematic(mc_filename, schem_filename):
             new_pos[1] -= 2
 
     # Reset program counter
-    """
+
     pc_start_pos = [-21, -1, -16]
     pos = pc_start_pos.copy()
     
@@ -181,7 +164,7 @@ def make_schematic(mc_filename, schem_filename):
         for _ in range(8):
             schem.setBlock(tuple(x), 'minecraft:repeater[facing=west,locked=true,powered=false]')
             x[1] -= 2
-    """
+
     # Save
 
     if schem_filename[-6:] == '.schem':
@@ -189,10 +172,3 @@ def make_schematic(mc_filename, schem_filename):
 
     schem.save('.', schem_filename, version=mcschematic.Version.JE_1_18_2)
 
-
-if __name__ == '__main__':
-    import sys
-    if len(sys.argv) != 3:
-        print("Usage: python schematic.py <input.mc> <output.schem>")
-        sys.exit(1)
-    make_schematic(sys.argv[1], sys.argv[2])
