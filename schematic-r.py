@@ -60,7 +60,7 @@ def make_schematic(mc_filename, schem_filename):
         new_pos = pos_list[address].copy()
         line = line[::-1]  
         byte1 = line[8:]
-        byte2 = line[:8]
+        byte2 = line[:8][::-1]
 
         for i, char in enumerate(byte1):
             if char == '1':
