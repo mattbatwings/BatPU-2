@@ -59,7 +59,7 @@ def make_schematic(mc_filename, schem_filename):
         face = 'east' if address < 512 else 'west'
         new_pos = pos_list[address].copy()
         line = line[::-1]  
-        byte1 = line[8:]
+        byte1 = line[8:][::-1]
         byte2 = line[:8][::-1]
 
         for i, char in enumerate(byte1):
