@@ -36,7 +36,10 @@ def make_schematic(mc_filename, schem_filename):
             pos[0] -= row * 7
             x_offset =  col * 2
             if col >= 16:
-                x_offset += 4           # second half of columns are 36 apart in X
+                if col % 2 != 0:
+                    x_offset += 2       # second half of columns are 36 apart in X
+                else:
+                    x_offset += 4           # second half of columns are 36 apart in X
             pos[2] += x_offset
             my_pos_list[row + col * 16] = pos.copy()      # north ( > )
 
