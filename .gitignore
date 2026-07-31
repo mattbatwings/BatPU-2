@@ -1,3 +1,4 @@
 *.schem
 *.mc
+*.as
 .gitignore
