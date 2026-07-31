@@ -172,4 +172,3 @@ def make_schematic(mc_filename, schem_filename):
 
     schem.save('.', schem_filename, version=mcschematic.Version.JE_1_18_2)
 
-
